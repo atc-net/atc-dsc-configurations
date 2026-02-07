@@ -1,20 +1,14 @@
 {
   "extensions":
   [
-    { "name": "AykutSarac.jsoncrack-vscode", "description": "Seamlessly visualize your JSON data instantly into graphs" },
     { "name": "christian-kohler.path-intellisense", "description": "Visual Studio Code plugin that auto completes filenames" },
-    { "name": "Davidsekar.redis-xplorer", "description": "Connect to multiple Redis servers simultaneously (TLS supported). Perform simple read, write & filter keys operations with ease" },
     { "name": "eamodio.gitlens", "description": "Supercharge Git within VS Code" },
     { "name": "EditorConfig.EditorConfig", "description": "EditorConfig Support for Visual Studio Code" },
-    { "name": "esbenp.prettier-vscode", "description": "Code formatter using prettier" },
     { "name": "formulahendry.github-actions", "description": "Language support for workflow file of GitHub Actions" },
-    { "name": "GitHub.copilot", "description": "Your AI pair programmer" },
-    { "name": "GitHub.copilot-chat", "description": "AI chat features powered by Copilot" },
     { "name": "github.vscode-github-actions", "description": "GitHub Actions workflows and runs for github.com hosted repositories in VS Code" },
     { "name": "johnpapa.vscode-cloak", "description": "Cloak hides/shows your secrets in environment files, to avoid accidentally sharing them with everyone who sees your screen" },
     { "name": "mikestead.dotenv", "description": "Support for dotenv file syntax" },
     { "name": "mindaro-dev.file-downloader", "description": "Exposes an API that allows other extensions to download files" },
-    { "name": "ms-vscode.js-debug", "description": "An extension for debugging Node.js programs and Chrome" },
     { "name": "ms-vscode.powershell", "description": "Develop PowerShell modules, commands and scripts in Visual Studio Code" },
     { "name": "MS-vsliveshare.vsliveshare", "description": "Real-time collaborative development from the comfort of your favorite tools" },
     { "name": "PKief.material-icon-theme", "description": "Material Design Icons for Visual Studio Code" },

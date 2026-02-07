@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Atc.Dsc.Configurations.Cli/Atc.Dsc.Configurations.Cli.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Atc.Dsc.Configurations.Cli.Tests/Atc.Dsc.Configurations.Cli.Tests.csproj" />
+  </Folder>
+</Solution>
