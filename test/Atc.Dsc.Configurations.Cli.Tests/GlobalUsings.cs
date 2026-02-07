@@ -1,0 +1,9 @@
+global using System.Runtime.Versioning;
+global using System.Text.Json;
+global using Atc.Dsc.Configurations.Cli.Clients;
+global using Atc.Dsc.Configurations.Cli.Contracts;
+global using Atc.Dsc.Configurations.Cli.Diagnostics;
+global using Atc.Dsc.Configurations.Cli.Extensions;
+global using Atc.Dsc.Configurations.Cli.Parsers;
+global using Atc.Dsc.Configurations.Cli.Repositories;
+global using Atc.Dsc.Configurations.Cli.Tui;

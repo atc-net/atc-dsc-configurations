@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+
+##########################################################################################################
+# NOTE: Run: dsc config set --file .\configurations\base-configuration.dsc.yaml                          #
+##########################################################################################################
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  description: Install common development tools for Windows 11
+  winget:
+    processor:
+      identifier: dscv3
+resources:
+  - name: Install 7Zip
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "7zip.7zip"
+      source: winget
+  - name: Install Fork
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Fork.Fork
+      source: winget
+  - name: Install Git
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Git.Git
+      source: winget
+  - name: Install GitHub CLI
+    type: Microsoft.WinGet/Package
+    properties:
+      id: GitHub.cli
+      source: winget
+  - name: Install Google Chrome
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Google.Chrome
+      source: winget
+  - name: Install jq
+    type: Microsoft.WinGet/Package
+    properties:
+      id: jqlang.jq
+      source: winget
+  - name: Install Notepad++
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Notepad++.Notepad++
+      source: winget
+  - name: Install PowerShell 7
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Microsoft.PowerShell
+      source: winget
+  - name: Install Slack
+    type: Microsoft.WinGet/Package
+    properties:
+      id: SlackTechnologies.Slack
+      source: winget
+  - name: Install Visual Studio Code
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Microsoft.VisualStudioCode
+      source: winget
+  - name: Install VSCode Extensions
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'Install Visual Studio Code')]"
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -Command
+        - |
+          $env:NODE_OPTIONS="--no-deprecation"
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $jsonContent = Get-Content '${WinGetConfigRoot}\base-configuration-vscode-extensions.json' -Raw
+          $extensions = (ConvertFrom-Json $jsonContent).extensions
+          $installedExtensions = code --list-extensions
+          foreach ($extension in $extensions) {
+            if ($installedExtensions -notcontains $extension.name) {
+              code --install-extension $extension.name
+            }
+          }
+      exitCode: 0
+  - name: Install WinMerge
+    type: Microsoft.WinGet/Package
+    properties:
+      id: WinMerge.WinMerge
+      source: winget

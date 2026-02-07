@@ -1,66 +1,105 @@
-# Atc.Winget.Configurations
+# Atc.Dsc.Configurations
 
-Using a WinGet Configuration file, you can consolidate manual machine setup and project onboarding to a single command that is reliable and repeatable. To achieve this, WinGet utilizes:
+DSC v3 configuration profiles for automating Windows developer environment setup, plus a .NET CLI/TUI tool (`atc-dsc`) for browsing, testing, and applying them.
 
-A YAML-formatted WinGet Configuration file that lists all of the software versions, packages, tools, dependencies, and settings required to set up the desired state of the development environment on your Windows machine.
-PowerShell Desired State Configuration (DSC) to automate the configuration of your Windows operating system.
-Use the Windows Package Manager winget configure command to initiate the configuration process.
+Using DSC v3 configuration files, you can consolidate manual machine setup and project onboarding to a single command that is reliable and repeatable. This repository provides:
 
-This repository contains multiple WinGet Configuration files for different profiles, enabling streamlined and reliable machine setup and project onboarding.
+- 📄 YAML-formatted DSC v3 configuration files that list all of the software versions, packages, tools, dependencies, and settings required to set up the desired state of the development environment on your Windows machine.
+- ⚙️ PowerShell Desired State Configuration (DSC) to automate the configuration of your Windows operating system.
+- 🖥️ An interactive .NET CLI/TUI tool (`atc-dsc`) with a two-panel interface for browsing, testing, and applying profiles.
 
 ## Table of Contents
 
-- [Atc.Winget.Configurations](#atcwingetconfigurations)
-  - [Table of Contents](#table-of-contents)
-  - [Efficient Winget Profile Management](#efficient-winget-profile-management)
-    - [Customization - Personalizing Your Profile](#customization---personalizing-your-profile)
-    - [Applying Profiles](#applying-profiles)
-    - [Use Case Scenarios](#use-case-scenarios)
-      - [DotNet Azure Developer Scenario](#dotnet-azure-developer-scenario)
-      - [Web Developer Scenario](#web-developer-scenario)
-  - [Requirements](#requirements)
-  - [How to contribute](#how-to-contribute)
+- [Atc.Dsc.Configurations](#atcdscconfigurations)
+  - [✨ Features](#-features)
+  - [📋 Requirements](#-requirements)
+  - [🚀 Applying Profiles](#-applying-profiles)
+  - [💡 Use Case Scenarios](#-use-case-scenarios)
+  - [🤝 How to contribute](#-how-to-contribute)
 
-## Efficient Winget Profile Management
+## ✨ Features
 
-### Customization - Personalizing Your Profile
+- 🖥️ **Interactive TUI** — two-panel interface with profile list, detail view, search/filter, and vim-style keyboard navigation
+- ⌨️ **CLI commands** — `list`, `show`, `test`, `apply`, `update` for scripting and CI/CD
+- 🔗 **GitHub integration** — fetches profiles from GitHub with local file-based caching
+- 📦 **17 profiles** — covering OS settings, .NET, Azure, web, Python, Java, containers, AI, embedded devices, and more
+- 🛡️ **Graceful degradation** — not admin? Browse and test, but apply is blocked with a clear message
 
-These profiles are designed to be adaptable, allowing you to customize them according to your specific needs. Whether it's modifying the list of software, adjusting settings, or adding new functionalities, you can tailor each profile to create an ideal setup for your environment.
+## 📋 Requirements
 
-### Applying Profiles
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [PowerShell 7](https://github.com/PowerShell/PowerShell/releases) (pwsh)
+- [DSC v3 Preview](https://github.com/PowerShell/DSC/releases) (>= 3.2) — install via `winget install Microsoft.DSC.Preview`
+- Windows (admin recommended for applying profiles)
 
-Execute individual profile either directly through winget or by using the accompanying helper script [`setup.ps1`](setup.ps1). This script offers the flexibility to either test or fully implement each profile as needed. Ensure to run the script as `Administrator` since several of the profiles require administrative access to apply the profiles.
+> **Note:** DSC v3 Preview >= 3.2 is required for the `Microsoft.DSC.Transitional/RunCommandOnSet` resource used by VSCode extension and dotnet tool installation. The stable DSC v3 release (3.1.x) does not include this resource.
 
-For guidance on applying each script, refer to the instructions provided at the beginning of every profile.
+## 🚀 Applying Profiles
 
-> Note: If you encounter the following error when running the accompanying helper script [`setup.ps1`](setup.ps1)
->
->> `setup.ps1 cannot be loaded because running scripts is disabled on this system`
->
-> Run the following command:
->
->> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted
+You can apply profiles using the `atc-dsc` CLI tool (recommended) or direct DSC CLI execution.
 
-### Use Case Scenarios
+### Interactive Mode (default)
 
-In the [`/configurations`](configurations/) directory, you will find various profiles designed for different environments. Each profile is a curated collection of configurations to streamline your setup process.
+```powershell
+dotnet tool install -g atc-dsc
+atc-dsc
+```
 
-It's important to note that the subsequent sections, showcasing scenarios for DotNet Azure Developers and Web Developers, are presented as inspirational examples. They serve to illustrate how you can leverage and modify these profiles to suit your specific requirements. Think of them as templates or starting points, from which you can build and customize your own perfect development setup. The real power of these profiles lies in their flexibility and adaptability, enabling you to mix, match, and modify to match your workflow and preferences perfectly.
+Launches the TUI with keyboard shortcuts:
 
-#### DotNet Azure Developer Scenario
+| Key | Action |
+|-----|--------|
+| `j`/`k` | Navigate profile list |
+| `Space` | Toggle profile selection |
+| `Enter` | Apply selected profiles |
+| `t` | Test selected profiles |
+| `/` | Filter profiles |
+| `Tab` | Switch panel focus |
+| `?` | Help |
+| `q` | Quit |
+
+### CLI Commands
+
+```powershell
+# 📋 List available profiles
+atc-dsc list
+atc-dsc list --json --verbose
+
+# 🔍 Show profile details
+atc-dsc show dotnet
+atc-dsc show dotnet --raw
+
+# ✅ Test profiles (read-only)
+atc-dsc test os dotnet azure
+atc-dsc test os --json --verbose
+
+# 🚀 Apply profiles (requires admin)
+atc-dsc apply os dotnet azure
+atc-dsc apply --all --yes
+atc-dsc apply --file ./custom.dsc.yaml
+
+# 🔄 Force refresh from GitHub
+atc-dsc update
+```
+
+### Direct CLI Execution
+
+```powershell
+dsc config set --file .\configurations\<profile>.dsc.yaml
+dsc config test --file .\configurations\<profile>.dsc.yaml
+```
+
+## 💡 Use Case Scenarios
+
+### 🔷 DotNet Azure Developer
 
 For a DotNet Azure Developer, the configuration contains the essential components for a seamless development experience. This includes setting up the operating system with the [`os`](configurations/os-configuration.dsc.yaml) configuration, integrating Azure-specific tools and settings via the [`azure`](configurations/azure-configuration.dsc.yaml) profile, and tailoring the environment for DotNet development with the [`dotnet`](configurations/dotnet-configuration.dsc.yaml) configuration.
 
-#### Web Developer Scenario
+### 🌐 Web Developer
 
 If you're a Web Developer, the configuration is crafted to cater to your specific needs. Start with the operating system setup using the [`os`](configurations/os-configuration.dsc.yaml) configuration, and then move on to apply the [`web`](configurations/web-configuration.dsc.yaml) profile, which includes a range of tools and settings optimized for web development tasks.
 
-## Requirements
-
-- [`Winget`](https://github.com/microsoft/winget-cli/releases)
-- [`PowerShell`](https://github.com/microsoft/winget-cli/releases)
-
-## How to contribute
+## 🤝 How to contribute
 
 [Contribution Guidelines](https://atc-net.github.io/introduction/about-atc#how-to-contribute)
 

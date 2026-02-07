@@ -1,6 +1,8 @@
 {
   "extensions":
   [
+    { "name": "AykutSarac.jsoncrack-vscode", "description": "Seamlessly visualize your JSON data instantly into graphs" },
+    { "name": "Davidsekar.redis-xplorer", "description": "Connect to multiple Redis servers simultaneously (TLS supported). Perform simple read, write & filter keys operations with ease" },
     { "name": "dvirtz.parquet-viewer", "description": "Allows users to view Apache Parquet files directly within Visual Studio Code, providing an easy way to inspect large data files without leaving the editor." },
     { "name": "ms-mssql.data-workspace-vscode", "description": "Provides a unified data project management experience in VS Code, enabling users to organize and manage database projects and data connections." },
     { "name": "ms-mssql.mssql", "description": "Enables database development directly from VS Code, allowing you to connect to SQL Server, Azure SQL Database, and SQL Data Warehouse, and run queries." },

@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+
+##########################################################################################################
+# NOTE: Run: dsc config set --file .\configurations\cplusplus-configuration.dsc.yaml                     #
+##########################################################################################################
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  description: Install tools for C++ development
+  winget:
+    processor:
+      identifier: dscv3
+resources:
+  - name: Install Visual Studio Code
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Microsoft.VisualStudioCode
+      source: winget
+  - name: Install VSCode Extensions
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'Install Visual Studio Code')]"
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -Command
+        - |
+          $env:NODE_OPTIONS="--no-deprecation"
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $jsonContent = Get-Content '${WinGetConfigRoot}\cplusplus-configuration-vscode-extensions.json' -Raw
+          $extensions = (ConvertFrom-Json $jsonContent).extensions
+          $installedExtensions = code --list-extensions
+          foreach ($extension in $extensions) {
+            if ($installedExtensions -notcontains $extension.name) {
+              code --install-extension $extension.name
+            }
+          }
+      exitCode: 0

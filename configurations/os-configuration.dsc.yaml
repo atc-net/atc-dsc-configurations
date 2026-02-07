@@ -1,65 +1,54 @@
-# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
 
 ##########################################################################################################
-# This configuration will configure various windows settings on Windows 11                               #
-# NOTE: Run: winget configure .\os-configuration.dsc.yaml --accept-configuration-agreements              #
+# NOTE: Run: dsc config set --file .\configurations\os-configuration.dsc.yaml                            #
 ##########################################################################################################
-properties:
-  configurationVersion: 0.2.0
-  assertions:
-    - resource: Microsoft.Windows.Developer/OsVersion
-      id: osVersionAssertion
-      directives:
-        description: Verify min OS version requirement
-        allowPrerelease: true
-      settings:
-        MinVersion: '10.0.22631'
-  resources:
-    - resource: Microsoft.Windows.Developer/DeveloperMode
-      id: developerMode
-      directives:
-        description: Enable Developer Mode
-        allowPrerelease: true
-      settings:
-        Ensure: Present
-      dependsOn:
-        - osVersionAssertion
-    - resource: Microsoft.Windows.Developer/ShowHiddenFiles
-      id: showHiddenFiles
-      directives:
-        description: Show hidden files
-        allowPrerelease: true
-      settings:
-        Ensure: Present # Ensuring Hidden files are shown
-      dependsOn:
-        - osVersionAssertion
-    - resource: Microsoft.Windows.Developer/HideFileExtensions
-      id: hideFileExtensions
-      directives:
-        description: Show file extensions
-        allowPrerelease: true
-      settings:
-        Ensure: Absent # Ensuring FileExtensions are shown (disables that they should be hidden)
-      dependsOn:
-        - osVersionAssertion
-    - resource: Microsoft.Windows.Developer/EnableDarkMode
-      id: enableDarkMode
-      directives:
-        description: Enable dark mode
-        allowPrerelease: true
-      settings:
-        Ensure: Present
-        # Use caution when setting `RestartExplorer: true` as this will force explorer to close.
-        RestartExplorer: true # Required to apply changes
-      dependsOn:
-        - osVersionAssertion
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: Flux
-      directives:
-        description: Install f.lux
-        allowPrerelease: true
-      settings:
-        id: flux.flux
-        source: winget
-      dependsOn:
-        - osVersionAssertion
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  description: Configure Windows 11 OS settings
+  winget:
+    processor:
+      identifier: dscv3
+resources:
+  - name: OS Version Check
+    type: Microsoft.DSC/Assertion
+    properties:
+      $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+      resources:
+        - name: Verify min OS version
+          type: Microsoft.Windows.Developer/OsVersion
+          properties:
+            MinVersion: '10.0.22631'
+  - name: Enable Developer Mode
+    type: Microsoft.Windows.Developer/DeveloperMode
+    dependsOn:
+      - "[resourceId('Microsoft.DSC/Assertion', 'OS Version Check')]"
+    properties:
+      Ensure: Present
+  - name: Show hidden files
+    type: Microsoft.Windows.Developer/ShowHiddenFiles
+    dependsOn:
+      - "[resourceId('Microsoft.DSC/Assertion', 'OS Version Check')]"
+    properties:
+      Ensure: Present
+  - name: Show file extensions
+    type: Microsoft.Windows.Developer/HideFileExtensions
+    dependsOn:
+      - "[resourceId('Microsoft.DSC/Assertion', 'OS Version Check')]"
+    properties:
+      Ensure: Absent # Ensuring FileExtensions are shown (disables that they should be hidden)
+  - name: Enable dark mode
+    type: Microsoft.Windows.Developer/EnableDarkMode
+    dependsOn:
+      - "[resourceId('Microsoft.DSC/Assertion', 'OS Version Check')]"
+    properties:
+      Ensure: Present
+      # Use caution when setting RestartExplorer to true as this will force explorer to close.
+      RestartExplorer: true # Required to apply changes
+  - name: Install flux
+    type: Microsoft.WinGet/Package
+    dependsOn:
+      - "[resourceId('Microsoft.DSC/Assertion', 'OS Version Check')]"
+    properties:
+      id: flux.flux
+      source: winget

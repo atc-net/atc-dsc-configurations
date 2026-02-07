@@ -1,61 +1,43 @@
-# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
 
 ##########################################################################################################
-# This configuration will install the tools necessary to get started developing web frontends            #
-# NOTE: Run: winget configure .\web-configuration.dsc.yaml --accept-configuration-agreements             #
+# NOTE: Run: dsc config set --file .\configurations\web-configuration.dsc.yaml                           #
 ##########################################################################################################
-properties:
-  configurationVersion: 0.2.0
-  resources:
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: VisualStudioCode
-      directives:
-        description: Install Visual Studio Code
-        allowPrerelease: true
-      settings:
-        id: Microsoft.VisualStudioCode
-        source: winget
-    - resource: PSDscResources/Script
-      id: VisualStudioCode Extensions
-      directives:
-        description: Script to install Visual Studio Code extensions
-        allowPrerelease: true
-      settings:
-        GetScript: |
-          # Not using this at the moment.
-        TestScript: |
-          # Ignore deprecation warnings & reload path
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  description: Install tools for web frontend development
+  winget:
+    processor:
+      identifier: dscv3
+resources:
+  - name: Install NodeJS
+    type: Microsoft.WinGet/Package
+    properties:
+      id: OpenJS.NodeJS.LTS
+      source: winget
+  - name: Install Visual Studio Code
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Microsoft.VisualStudioCode
+      source: winget
+  - name: Install VSCode Extensions
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'Install Visual Studio Code')]"
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -Command
+        - |
           $env:NODE_OPTIONS="--no-deprecation"
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-
-          # Load required extensions from JSON file
           $jsonContent = Get-Content '${WinGetConfigRoot}\web-configuration-vscode-extensions.json' -Raw
           $extensions = (ConvertFrom-Json $jsonContent).extensions
-
-          # Get the list of currently installed extensions
           $installedExtensions = code --list-extensions
-
-          # Check if all required extensions are installed
-          $allInstalled = $extensions.name | ForEach-Object { $_ -in $installedExtensions }
-
-          return $allInstalled -contains $false -eq $false
-        SetScript: |
-          # Ignore deprecation warnings & reload path
-          $env:NODE_OPTIONS="--no-deprecation"
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-
-          # Load required extensions from JSON file
-          $jsonContent = Get-Content '${WinGetConfigRoot}\web-configuration-vscode-extensions.json' -Raw
-          $extensions = (ConvertFrom-Json $jsonContent).extensions
-
-          # Get the list of currently installed extensions
-          $installedExtensions = code --list-extensions
-
-          # Install each extension if not already installed
           foreach ($extension in $extensions) {
             if ($installedExtensions -notcontains $extension.name) {
               code --install-extension $extension.name
             }
           }
-      dependsOn:
-        - VisualStudioCode
+      exitCode: 0
