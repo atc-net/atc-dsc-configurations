@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/atc-net/atc-dsc-configurations/compare/v1.1.0...v1.1.1) (2026-02-10)
+
+
+### Bug Fixes
+
+* add missing versioning propertygroup for release-please ([318b337](https://github.com/atc-net/atc-dsc-configurations/commit/318b337387895e1988aca09a8d8592121be515af))
+
 ## [1.1.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.0.0...v1.1.0) (2026-02-10)
 
 
