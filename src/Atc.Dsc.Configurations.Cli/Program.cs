@@ -19,7 +19,9 @@ public static class Program
 
         serviceCollection.AddLogging(builder =>
         {
+            builder.AddFilter("System.Net.Http", LogLevel.Warning);
             builder.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+            builder.AddFilter("Microsoft.Extensions.Http", LogLevel.Warning);
         });
 
         RegisterServices(serviceCollection);
