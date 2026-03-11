@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/atc-net/atc-dsc-configurations/compare/v1.1.1...v1.1.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* suppress HttpMessageHandler cleanup log messages in TUI ([4fb8c57](https://github.com/atc-net/atc-dsc-configurations/commit/4fb8c57a38a986f41b078db5c421fdd2802d4501))
+
 ## [1.1.1](https://github.com/atc-net/atc-dsc-configurations/compare/v1.1.0...v1.1.1) (2026-02-10)
 
 
