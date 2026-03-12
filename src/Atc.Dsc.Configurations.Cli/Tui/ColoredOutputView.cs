@@ -7,7 +7,7 @@ namespace Atc.Dsc.Configurations.Cli.Tui;
 /// </summary>
 public sealed class ColoredOutputView : View
 {
-    private static readonly Terminal.Gui.Drawing.Attribute BgAttr = new(ColorName16.Gray, ColorName16.Black);
+    private static Terminal.Gui.Drawing.Attribute BgAttr => DarkTheme.Default;
 
     private readonly List<(string Text, Terminal.Gui.Drawing.Attribute Attr)> lines = [];
 

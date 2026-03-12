@@ -23,6 +23,8 @@ global using Atc.Dsc.Configurations.Cli.Extensions;
 global using Atc.Dsc.Configurations.Cli.Parsers;
 global using Atc.Dsc.Configurations.Cli.Repositories;
 global using Atc.Dsc.Configurations.Cli.Tui;
+global using Atc.Dsc.Configurations.Cli.Tui.Theme;
+global using Atc.Dsc.Configurations.Cli.Tui.Views;
 global using CliWrap;
 global using CliWrap.Buffered;
 global using Microsoft.Extensions.Configuration;

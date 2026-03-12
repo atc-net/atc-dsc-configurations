@@ -36,6 +36,7 @@ public sealed class TerminalGuiRunner : IInteractiveRunner
     public Task<int> RunAsync(CancellationToken cancellationToken = default)
     {
         using var app = Application.Create().Init();
+        DarkTheme.Register();
         using var registration = cancellationToken.Register(() => app.Invoke(() => app.RequestStop()));
 
         var mainWindow = new MainWindow(app, repository, parser, dscClient, envInfo);
