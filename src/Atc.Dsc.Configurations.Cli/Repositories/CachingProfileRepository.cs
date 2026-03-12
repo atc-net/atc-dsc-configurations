@@ -52,12 +52,27 @@ public sealed class CachingProfileRepository : IProfileRepository, IDisposable
                 }
             }
 
-            var result = await inner.ListProfilesAsync(cancellationToken);
-            var json = JsonSerializer.Serialize(result, jsonOptions);
+            try
+            {
+                var result = await inner.ListProfilesAsync(cancellationToken);
+                var json = JsonSerializer.Serialize(result, jsonOptions);
+                await File.WriteAllTextAsync(indexPath, json, cancellationToken);
+                return result;
+            }
+            catch (HttpRequestException)
+            {
+                if (File.Exists(indexPath))
+                {
+                    var stale = await File.ReadAllTextAsync(indexPath, cancellationToken);
+                    var profiles = JsonSerializer.Deserialize<List<ProfileSummary>>(stale, jsonOptions);
+                    if (profiles is not null)
+                    {
+                        return profiles;
+                    }
+                }
 
-            await File.WriteAllTextAsync(indexPath, json, cancellationToken);
-
-            return result;
+                throw;
+            }
         }
         finally
         {
@@ -87,7 +102,10 @@ public sealed class CachingProfileRepository : IProfileRepository, IDisposable
             }
 
             var content = await inner.GetProfileContentAsync(fileName, cancellationToken);
-            await File.WriteAllTextAsync(cachedPath, content, cancellationToken);
+            if (content.Length > 0)
+            {
+                await File.WriteAllTextAsync(cachedPath, content, cancellationToken);
+            }
 
             return content;
         }
