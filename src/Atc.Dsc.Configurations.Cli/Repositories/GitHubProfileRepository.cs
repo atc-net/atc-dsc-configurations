@@ -57,12 +57,21 @@ public sealed class GitHubProfileRepository : IProfileRepository
         return profiles;
     }
 
-    public Task<string> GetProfileContentAsync(
+    public async Task<string> GetProfileContentAsync(
         string fileName,
         CancellationToken cancellationToken = default)
     {
         var url = $"https://raw.githubusercontent.com/{owner}/{repo}/{gitRef}/{ConfigurationsPath}/{fileName}";
-        return httpClient.GetStringAsync(new Uri(url), cancellationToken);
+        using var response = await httpClient.GetAsync(
+            new Uri(url),
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return string.Empty;
+        }
+
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
     public void InvalidateCache()
