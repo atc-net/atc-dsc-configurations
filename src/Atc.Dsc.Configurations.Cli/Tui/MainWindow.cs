@@ -27,7 +27,6 @@ public sealed class MainWindow : Window
     private readonly ObservableCollection<string> profileDisplayNames = [];
     private readonly List<ProfileSummary> allProfileSummaries = [];
     private readonly List<int> filteredIndices = [];
-    private bool filterVisible;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -84,7 +83,7 @@ public sealed class MainWindow : Window
         var list = new ListView
         {
             X = 0,
-            Y = 0,
+            Y = 1,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             ShowMarks = true,
@@ -103,12 +102,13 @@ public sealed class MainWindow : Window
         var field = new TextField
         {
             X = 0,
-            Y = Pos.AnchorEnd(1),
+            Y = 0,
             Width = Dim.Fill(),
             Height = 1,
-            Visible = false,
+            Text = string.Empty,
         };
-        field.KeyDown += (_, _) => app.Invoke(ApplyFilter);
+
+        field.TextChanged += (_, _) => ApplyFilter();
         return field;
     }
 
@@ -123,7 +123,7 @@ public sealed class MainWindow : Window
             Height = Dim.Fill(1),
         };
 
-        leftPanel.Add(profileList, filterField);
+        leftPanel.Add(filterField, profileList);
         return leftPanel;
     }
 
@@ -228,7 +228,15 @@ public sealed class MainWindow : Window
 
             if (key == Key.Esc)
             {
-                HandleEscapeKey();
+                if (filterField.HasFocus)
+                {
+                    profileList.SetFocus();
+                }
+                else
+                {
+                    ConfirmQuit();
+                }
+
                 key.Handled = true;
                 return;
             }
@@ -240,18 +248,6 @@ public sealed class MainWindow : Window
 
             HandleNonFilterKey(key);
         };
-    }
-
-    private void HandleEscapeKey()
-    {
-        if (filterVisible)
-        {
-            HideFilter();
-        }
-        else
-        {
-            ConfirmQuit();
-        }
     }
 
     private void HandleNonFilterKey(Key key)
@@ -374,7 +370,7 @@ public sealed class MainWindow : Window
         }
         else if (key == '/')
         {
-            ShowFilter();
+            FocusFilter();
             key.Handled = true;
         }
         else if (key == '?')
@@ -420,8 +416,6 @@ public sealed class MainWindow : Window
         var list = new List<ActionHint>
         {
             new("Space", "Toggle", txt, txt),
-            new("^a", "All", txt, txt),
-            new("^d", "None", txt, txt),
             new("t", "Test", txt, txt),
         };
 
@@ -430,7 +424,6 @@ public sealed class MainWindow : Window
             list.Add(new ActionHint("Enter", "Apply", txt, txt));
         }
 
-        list.Add(new ActionHint("/", "Filter", txt, txt));
         list.Add(new ActionHint("?", "Help", txt, txt));
         list.Add(new ActionHint("q", "Quit", txt, txt));
 
@@ -686,23 +679,9 @@ public sealed class MainWindow : Window
         app.Run(dialog);
     }
 
-    private void ShowFilter()
+    private void FocusFilter()
     {
-        filterVisible = true;
-        filterField.Visible = true;
-        filterField.Text = string.Empty;
-        profileList.Height = Dim.Fill(2);
         filterField.SetFocus();
-    }
-
-    private void HideFilter()
-    {
-        filterVisible = false;
-        filterField.Visible = false;
-        filterField.Text = string.Empty;
-        profileList.Height = Dim.Fill();
-        profileList.SetFocus();
-        ApplyFilter();
     }
 
     private void ApplyFilter()
