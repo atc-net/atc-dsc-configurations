@@ -22,7 +22,7 @@ public sealed class MainWindow : Window
     private readonly TextView extensionsText;
     private readonly TextView rawYamlText;
     private readonly TextField filterField;
-    private readonly Label statusLabel;
+    private readonly ActionHintsView actionHints;
 
     private readonly ObservableCollection<string> profileDisplayNames = [];
     private readonly List<ProfileSummary> allProfileSummaries = [];
@@ -70,9 +70,9 @@ public sealed class MainWindow : Window
         detailTabs = CreateDetailTabs();
         var rightPanel = CreateRightPanel(leftPanel);
 
-        statusLabel = CreateStatusLabel();
+        actionHints = CreateActionHints();
 
-        Add(leftPanel, rightPanel, statusLabel);
+        Add(leftPanel, rightPanel, actionHints);
         AddKeyBindings();
 
         // Load profiles once the UI is ready
@@ -91,6 +91,8 @@ public sealed class MainWindow : Window
             MarkMultiple = true,
             CanFocus = true,
         };
+
+        list.SetScheme(DarkTheme.CreateListScheme());
 
         list.ValueChanged += OnProfileSelectionChanged;
         return list;
@@ -170,15 +172,19 @@ public sealed class MainWindow : Window
         return rightPanel;
     }
 
-    private Label CreateStatusLabel()
-        => new()
+    private ActionHintsView CreateActionHints()
+    {
+        var view = new ActionHintsView
         {
             X = 0,
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
             Height = 1,
-            Text = BuildStatusText(),
         };
+
+        view.SetHints(BuildActionHints());
+        return view;
+    }
 
     private async Task LoadProfilesAsync()
     {
@@ -399,28 +405,48 @@ public sealed class MainWindow : Window
     {
         profileList.MarkAll(selected);
         profileList.SetNeedsLayout();
-        UpdateStatusLabel();
+        UpdateActionHints();
     }
 
-    private void UpdateStatusLabel()
+    private void UpdateActionHints()
     {
-        var left = BuildStatusText();
-        const string right = "[j/k] Scroll  [Tab] Switch ";
-        var width = statusLabel.Frame.Width;
-        var padding = width - left.Length - right.Length;
-        statusLabel.Text = padding > 0
-            ? left + new string(' ', padding) + right
-            : left;
+        actionHints.SetHints(BuildActionHints());
     }
 
-    private string BuildStatusText()
+    private List<ActionHint> BuildActionHints()
     {
+        var txt = DarkTheme.StatusBarKey;
+
+        var list = new List<ActionHint>
+        {
+            new("Space", "Toggle", txt, txt),
+            new("^a", "All", txt, txt),
+            new("^d", "None", txt, txt),
+            new("t", "Test", txt, txt),
+        };
+
+        if (envInfo.IsAdmin)
+        {
+            list.Add(new ActionHint("Enter", "Apply", txt, txt));
+        }
+
+        list.Add(new ActionHint("/", "Filter", txt, txt));
+        list.Add(new ActionHint("?", "Help", txt, txt));
+        list.Add(new ActionHint("q", "Quit", txt, txt));
+
         var marked = profileList.GetAllMarkedItems();
         var count = marked.Count();
-        var suffix = count > 0 ? $"  ({count} selected)" : string.Empty;
-        return envInfo.IsAdmin
-            ? $" [Space] Toggle  [Ctrl+a] All  [Ctrl+d] None  [Enter] Apply  [t] Test  [/] Filter  [?] Help  [q] Quit{suffix}"
-            : $" [Space] Toggle  [Ctrl+a] All  [Ctrl+d] None  [t] Test  [/] Filter  [?] Help  [q] Quit{suffix}  (not admin \u2014 test only)";
+        if (count > 0)
+        {
+            list.Add(new ActionHint($"{count}", "selected", DarkTheme.StatusBarHighlight, txt));
+        }
+
+        if (!envInfo.IsAdmin)
+        {
+            list.Add(new ActionHint("\u2014", "test only", txt, txt));
+        }
+
+        return list;
     }
 
     private void OnProfileSelectionChanged(
@@ -433,7 +459,7 @@ public sealed class MainWindow : Window
             return;
         }
 
-        UpdateStatusLabel();
+        UpdateActionHints();
 
         _ = RunGuardedAsync(() => LoadProfileDetailAsync(filteredIndices[index.Value]));
     }

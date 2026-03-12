@@ -19,14 +19,27 @@ public sealed class ExecutionDialog : Dialog
     private readonly Button closeButton;
     private CancellationTokenSource? cts;
 
-    // Color palette
-    private static readonly Terminal.Gui.Drawing.Attribute DefaultAttr = new(ColorName16.Gray, ColorName16.Black);
-    private static readonly Terminal.Gui.Drawing.Attribute HeaderAttr = new(ColorName16.White, ColorName16.Black);
-    private static readonly Terminal.Gui.Drawing.Attribute GreenAttr = new(ColorName16.BrightGreen, ColorName16.Black);
-    private static readonly Terminal.Gui.Drawing.Attribute RedAttr = new(ColorName16.BrightRed, ColorName16.Black);
-    private static readonly Terminal.Gui.Drawing.Attribute YellowAttr = new(ColorName16.BrightYellow, ColorName16.Black);
-    private static readonly Terminal.Gui.Drawing.Attribute CyanAttr = new(ColorName16.BrightCyan, ColorName16.Black);
-    private static readonly Terminal.Gui.Drawing.Attribute DimAttr = new(ColorName16.DarkGray, ColorName16.Black);
+    // Color palette — sourced from the centralized DarkTheme
+    private static Terminal.Gui.Drawing.Attribute DefaultAttr
+        => DarkTheme.Default;
+
+    private static Terminal.Gui.Drawing.Attribute HeaderAttr
+        => DarkTheme.Header;
+
+    private static Terminal.Gui.Drawing.Attribute GreenAttr
+        => DarkTheme.Green;
+
+    private static Terminal.Gui.Drawing.Attribute RedAttr
+        => DarkTheme.Red;
+
+    private static Terminal.Gui.Drawing.Attribute YellowAttr
+        => DarkTheme.Yellow;
+
+    private static Terminal.Gui.Drawing.Attribute CyanAttr
+        => DarkTheme.Cyan;
+
+    private static Terminal.Gui.Drawing.Attribute DimAttr
+        => DarkTheme.Dim;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ExecutionDialog"/> class.
@@ -58,7 +71,6 @@ public sealed class ExecutionDialog : Dialog
         Title = $"{modeTitle} {profiles.Count} profile(s)";
         Width = Dim.Percent(90);
         Height = Dim.Percent(85);
-
         progressLabel = new Label
         {
             X = 0,
