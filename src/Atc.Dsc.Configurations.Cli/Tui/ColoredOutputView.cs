@@ -25,6 +25,13 @@ public sealed class ColoredOutputView : View
     }
 
     /// <summary>
+    /// Returns a snapshot of all lines and their color attributes.
+    /// </summary>
+    /// <returns>A read-only list of text/attribute pairs.</returns>
+    public IReadOnlyList<(string Text, Terminal.Gui.Drawing.Attribute Attr)> GetLines()
+        => lines.ToList();
+
+    /// <summary>
     /// Removes all lines and resets the view.
     /// </summary>
     public void Clear()
