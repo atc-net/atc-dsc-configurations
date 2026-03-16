@@ -15,7 +15,7 @@ public sealed class ExecutionDialog : Dialog
     private readonly ExecutionMode mode;
 
     private readonly ColoredOutputView outputView;
-    private readonly Label progressLabel;
+    private readonly LoadingSpinnerView progressSpinner;
     private readonly Button closeButton;
     private CancellationTokenSource? cts;
 
@@ -71,12 +71,13 @@ public sealed class ExecutionDialog : Dialog
         Title = $"{modeTitle} {profiles.Count} profile(s)";
         Width = Dim.Percent(90);
         Height = Dim.Percent(85);
-        progressLabel = new Label
+        progressSpinner = new LoadingSpinnerView(app)
         {
             X = 0,
             Y = 0,
             Width = Dim.Fill(),
-            Text = "Starting...",
+            Height = 1,
+            Label = "Starting...",
         };
 
         outputView = new ColoredOutputView
@@ -100,7 +101,7 @@ public sealed class ExecutionDialog : Dialog
             e.Handled = true;
         };
 
-        Add(progressLabel, outputView);
+        Add(progressSpinner, outputView);
         AddButton(closeButton);
 
         Initialized += (_, _) => _ = RunExecutionAsync();
@@ -111,6 +112,7 @@ public sealed class ExecutionDialog : Dialog
         using var tokenSource = new CancellationTokenSource();
         cts = tokenSource;
 
+        progressSpinner.Start();
         var sw = Stopwatch.StartNew();
 
         try
@@ -138,6 +140,7 @@ public sealed class ExecutionDialog : Dialog
         }
         finally
         {
+            progressSpinner.Stop();
             cts = null;
         }
 
@@ -296,7 +299,8 @@ public sealed class ExecutionDialog : Dialog
     {
         app.Invoke(() =>
         {
-            progressLabel.Text = text;
+            progressSpinner.Label = text;
+            progressSpinner.SetNeedsDraw();
         });
     }
 
