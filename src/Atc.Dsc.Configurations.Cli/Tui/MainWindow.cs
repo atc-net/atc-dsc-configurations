@@ -208,7 +208,6 @@ public sealed class MainWindow : Window
             if (summaries.Count > 0)
             {
                 profileList.SelectedItem = 0;
-                await LoadProfileDetailAsync(0);
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
