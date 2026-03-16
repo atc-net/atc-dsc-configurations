@@ -29,10 +29,17 @@ Using DSC v3 configuration files, you can consolidate manual machine setup and p
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [PowerShell 7](https://github.com/PowerShell/PowerShell/releases) (pwsh)
-- [DSC v3 Preview](https://github.com/PowerShell/DSC/releases) (>= 3.2) — install via `winget install Microsoft.DSC.Preview`
+- [DSC v3 Preview](https://github.com/PowerShell/DSC/releases) (>= 3.2.2) — install via `winget install Microsoft.DSC.Preview`
 - Windows (admin recommended for applying profiles)
 
 > **Note:** DSC v3 Preview >= 3.2 is required for the `Microsoft.DSC.Transitional/RunCommandOnSet` resource used by VSCode extension and dotnet tool installation. The stable DSC v3 release (3.1.x) does not include this resource.
+
+> **Known issue — DSC v3 `3.2.0-preview.12` (version `3.2.12.0`):** This version has a bug where `dsc config test` and `dsc config set` fail with `"JSON: trailing characters at line 2 column 1"` for all WinGet resources. DSC successfully invokes `winget dscv3 package --test` and gets valid results, but then crashes during its own JSON verification step (exit code 2, no output). This affects every profile containing `Microsoft.WinGet/Package` resources. The `atc-dsc` tool handles this gracefully by showing "Failed to parse DSC output as JSON". To work around this, downgrade to a working version:
+>
+> ```powershell
+> winget uninstall Microsoft.DSC.Preview
+> winget install Microsoft.DSC.Preview --version 3.2.2
+> ```
 
 ## 🚀 Applying Profiles
 
