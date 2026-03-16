@@ -30,6 +30,36 @@ public sealed class MainWindowTests
         Assert.Equal(expected, MainWindow.ResolveDependencyIndex(dependency, resources));
     }
 
+    [Fact]
+    public void GroupResourcesByType_GroupsAndSortsDescending()
+    {
+        // Arrange
+        var resources = new List<Resource>
+        {
+            new("git", "Microsoft.WinGet/Package", [], null),
+            new("node", "Microsoft.WinGet/Package", [], null),
+            new("setup", "Microsoft.DSC.Transitional/RunCommandOnSet", [], null),
+            new("vs", "Microsoft.VisualStudio.DSC/VSComponents", [], null),
+            new("dotnet", "Microsoft.WinGet/Package", [], null),
+        };
+
+        // Act
+        var result = MainWindow.GroupResourcesByType(resources);
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Equal(("Package", 3), result[0]);
+        Assert.Equal(("Script", 1), result[1]);
+        Assert.Equal(("VS Config", 1), result[2]);
+    }
+
+    [Fact]
+    public void GroupResourcesByType_EmptyList_ReturnsEmpty()
+    {
+        var result = MainWindow.GroupResourcesByType([]);
+        Assert.Empty(result);
+    }
+
     public static TheoryData<string, IReadOnlyList<Resource>, int?>
         ResolveDependencyIndexData
         => new()

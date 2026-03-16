@@ -25,6 +25,15 @@ public sealed class ColoredOutputView : View
     }
 
     /// <summary>
+    /// Removes all lines and resets the view.
+    /// </summary>
+    public void Clear()
+    {
+        lines.Clear();
+        UpdateContentSize();
+    }
+
+    /// <summary>
     /// Scrolls the view to show the last line of output.
     /// </summary>
     public void ScrollToEnd()

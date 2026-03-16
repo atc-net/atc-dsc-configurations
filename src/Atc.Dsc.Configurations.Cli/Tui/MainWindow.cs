@@ -17,7 +17,7 @@ public sealed class MainWindow : Window
 
     private readonly ListView profileList;
     private readonly TabView detailTabs;
-    private readonly TextView overviewText;
+    private readonly ColoredOutputView overviewText;
     private readonly TextView resourcesText;
     private readonly TextView extensionsText;
     private readonly TextView rawYamlText;
@@ -62,7 +62,15 @@ public sealed class MainWindow : Window
         filterField = CreateFilterField();
         var leftPanel = CreateLeftPanel();
 
-        overviewText = CreateReadOnlyTextView(wordWrap: true);
+        overviewText = new ColoredOutputView
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            CanFocus = false,
+        };
+
         resourcesText = CreateReadOnlyTextView(wordWrap: false);
         extensionsText = CreateReadOnlyTextView(wordWrap: false);
         rawYamlText = CreateReadOnlyTextView(wordWrap: false);
@@ -212,7 +220,8 @@ public sealed class MainWindow : Window
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            overviewText.Text = $"Error loading profiles: {ex.Message}";
+            overviewText.Clear();
+            overviewText.AppendLine($"Error loading profiles: {ex.Message}", DarkTheme.Red);
         }
     }
 
@@ -481,29 +490,85 @@ public sealed class MainWindow : Window
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            overviewText.Text = $"Error loading profile: {ex.Message}";
+            overviewText.Clear();
+            overviewText.AppendLine($"Error loading profile: {ex.Message}", DarkTheme.Red);
         }
     }
 
     private void PopulateOverviewTab(Contracts.Profile profile)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine(profile.Name);
-        sb.AppendLine(new string('=', profile.Name.Length));
-        sb.AppendLine();
+        overviewText.Clear();
+
+        overviewText.AppendLine(profile.Name, DarkTheme.Header);
+        overviewText.AppendLine(new string('\u2500', profile.Name.Length), DarkTheme.Dim);
+        overviewText.AppendLine(string.Empty, DarkTheme.Default);
 
         if (profile.Description is not null)
         {
-            sb.AppendLine(profile.Description);
-            sb.AppendLine();
+            overviewText.AppendLine(profile.Description, DarkTheme.Default);
+            overviewText.AppendLine(string.Empty, DarkTheme.Default);
         }
 
-        sb.AppendLine(CultureInfo.InvariantCulture, $"Resources: {profile.Resources.Count}");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"File: {profile.FileName}");
-        sb.AppendLine("Source: GitHub");
+        AppendResourceBreakdown(profile.Resources);
 
-        overviewText.Text = sb.ToString();
+        overviewText.AppendLine(string.Empty, DarkTheme.Default);
+        overviewText.AppendLine($"File: {profile.FileName}", DarkTheme.Dim);
+        overviewText.AppendLine("Source: GitHub", DarkTheme.Dim);
     }
+
+    private void AppendResourceBreakdown(IReadOnlyList<Resource> resources)
+    {
+        overviewText.AppendLine(
+            $"Resources ({resources.Count})",
+            DarkTheme.Header);
+
+        var groups = GroupResourcesByType(resources);
+        foreach (var (type, count) in groups)
+        {
+            var attr = GetTypeColor(type);
+            var label = count > 1 ? PluralizeType(type) : type;
+            overviewText.AppendLine($"  \u25a0 {count} {label}", attr);
+        }
+    }
+
+    internal static IReadOnlyList<(string Type, int Count)> GroupResourcesByType(
+        IReadOnlyList<Resource> resources)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var res in resources)
+        {
+            var type = AbbreviateType(res.Type);
+            counts.TryGetValue(type, out var current);
+            counts[type] = current + 1;
+        }
+
+        var result = new List<(string, int)>(counts.Count);
+        foreach (var kvp in counts)
+        {
+            result.Add((kvp.Key, kvp.Value));
+        }
+
+        result.Sort((a, b) => b.Item2.CompareTo(a.Item2));
+        return result;
+    }
+
+    internal static Terminal.Gui.Drawing.Attribute GetTypeColor(
+        string abbreviatedType) => abbreviatedType switch
+    {
+        "Package" => DarkTheme.Green,
+        "Script" => DarkTheme.Cyan,
+        "PowerShell" => DarkTheme.Yellow,
+        "VS Config" => DarkTheme.Blue,
+        "Assertion" => DarkTheme.Dim,
+        _ => DarkTheme.Default,
+    };
+
+    internal static string PluralizeType(string type) => type switch
+    {
+        "PowerShell" => "PowerShell",
+        "VS Config" => "VS Configs",
+        _ => type + "s",
+    };
 
     private void PopulateResourcesTab(Contracts.Profile profile)
     {
