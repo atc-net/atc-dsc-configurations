@@ -107,6 +107,14 @@ public sealed class ExecutionDialog : Dialog
         Initialized += (_, _) => _ = RunExecutionAsync();
     }
 
+    /// <summary>
+    /// Gets the output lines after execution completes. Used by the
+    /// execution log tab to capture results from this session.
+    /// </summary>
+    /// <returns>A read-only list of text/attribute pairs from the output view.</returns>
+    internal IReadOnlyList<(string Text, Terminal.Gui.Drawing.Attribute Attr)> GetOutputLines()
+        => outputView.GetLines();
+
     private async Task RunExecutionAsync()
     {
         using var tokenSource = new CancellationTokenSource();

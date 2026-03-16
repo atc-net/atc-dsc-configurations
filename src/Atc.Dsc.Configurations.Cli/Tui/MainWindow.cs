@@ -17,6 +17,7 @@ public sealed class MainWindow : Window
 
     private readonly ListView profileList;
     private readonly TabView detailTabs;
+    private readonly TopTabBarView topTabBar;
     private readonly ColoredOutputView overviewText;
     private readonly TextView resourcesText;
     private readonly TextView extensionsText;
@@ -24,10 +25,15 @@ public sealed class MainWindow : Window
     private readonly TextField filterField;
     private readonly ActionHintsView actionHints;
     private readonly LoadingSpinnerView spinner;
+    private readonly ColoredOutputView executionLogView;
+    private readonly ColoredOutputView environmentView;
+    private readonly View profilesPage;
 
     private readonly ObservableCollection<string> profileDisplayNames = [];
     private readonly List<ProfileSummary> allProfileSummaries = [];
     private readonly List<int> filteredIndices = [];
+
+    private int activeTopTab;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -61,33 +67,24 @@ public sealed class MainWindow : Window
 
         profileList = CreateProfileList();
         filterField = CreateFilterField();
-        var leftPanel = CreateLeftPanel();
-
-        overviewText = new ColoredOutputView
-        {
-            X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
-            CanFocus = false,
-        };
-
+        overviewText = CreateOverviewView();
         resourcesText = CreateReadOnlyTextView(wordWrap: false);
         extensionsText = CreateReadOnlyTextView(wordWrap: false);
         rawYamlText = CreateReadOnlyTextView(wordWrap: false);
         detailTabs = CreateDetailTabs();
-        spinner = new LoadingSpinnerView(app)
-        {
-            X = 1,
-            Y = 1,
-            Width = Dim.Fill(),
-            Height = 1,
-        };
-        var rightPanel = CreateRightPanel(leftPanel);
+        spinner = new LoadingSpinnerView(app) { X = 1, Y = 1, Width = Dim.Fill(), Height = 1 };
 
+        var leftPanel = CreateLeftPanel();
+        var rightPanel = CreateRightPanel(leftPanel);
+        profilesPage = CreateProfilesPage(leftPanel, rightPanel);
+        executionLogView = CreateExecutionLogView();
+        environmentView = CreateEnvironmentView();
+        topTabBar = CreateTopTabBar();
         actionHints = CreateActionHints();
 
-        Add(leftPanel, rightPanel, actionHints);
+        SetupPageLayout();
+        Add(topTabBar, profilesPage, executionLogView, environmentView, actionHints);
+        SwitchTopTab(0);
         AddKeyBindings();
 
         // Load profiles once the UI is ready
@@ -110,6 +107,21 @@ public sealed class MainWindow : Window
         list.SetScheme(DarkTheme.CreateListScheme());
 
         list.ValueChanged += OnProfileSelectionChanged;
+
+        list.KeyDown += (_, key) =>
+        {
+            if (key == Key.CursorLeft || key == Key.CursorRight)
+            {
+                key.Handled = true;
+            }
+            else if (key == Key.Space)
+            {
+                list.MarkUnmarkSelectedItem();
+                UpdateActionHints();
+                key.Handled = true;
+            }
+        };
+
         return list;
     }
 
@@ -128,6 +140,26 @@ public sealed class MainWindow : Window
         return field;
     }
 
+    private static ColoredOutputView CreateOverviewView()
+        => new()
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            CanFocus = false,
+        };
+
+    private void SetupPageLayout()
+    {
+        profilesPage.Y = 1;
+        profilesPage.Height = Dim.Fill(1);
+        executionLogView.Y = 1;
+        executionLogView.Height = Dim.Fill(1);
+        environmentView.Y = 1;
+        environmentView.Height = Dim.Fill(1);
+    }
+
     private FrameView CreateLeftPanel()
     {
         var leftPanel = new FrameView
@@ -136,7 +168,7 @@ public sealed class MainWindow : Window
             X = 0,
             Y = 0,
             Width = Dim.Percent(40),
-            Height = Dim.Fill(1),
+            Height = Dim.Fill(),
         };
 
         leftPanel.Add(filterField, profileList);
@@ -181,11 +213,105 @@ public sealed class MainWindow : Window
             X = Pos.Right(leftPanel),
             Y = 0,
             Width = Dim.Fill(),
-            Height = Dim.Fill(1),
+            Height = Dim.Fill(),
         };
 
         rightPanel.Add(detailTabs, spinner);
         return rightPanel;
+    }
+
+    private static View CreateProfilesPage(
+        View leftPanel,
+        View rightPanel)
+    {
+        var page = new View
+        {
+            X = 0,
+            Width = Dim.Fill(),
+            CanFocus = true,
+        };
+
+        page.Add(leftPanel, rightPanel);
+        return page;
+    }
+
+    private static ColoredOutputView CreateExecutionLogView()
+    {
+        var view = new ColoredOutputView
+        {
+            X = 0,
+            Width = Dim.Fill(),
+            CanFocus = true,
+        };
+
+        view.AppendLine("No executions yet.", DarkTheme.Dim);
+        return view;
+    }
+
+    private ColoredOutputView CreateEnvironmentView()
+    {
+        var view = new ColoredOutputView
+        {
+            X = 0,
+            Width = Dim.Fill(),
+            CanFocus = true,
+        };
+
+        PopulateEnvironmentView(view);
+        return view;
+    }
+
+    private void PopulateEnvironmentView(ColoredOutputView view)
+    {
+        view.Clear();
+
+        view.AppendLine("Environment", DarkTheme.Header);
+        view.AppendLine(new string('\u2500', 40), DarkTheme.Dim);
+        view.AppendLine(string.Empty, DarkTheme.Default);
+
+        var adminLabel = envInfo.IsAdmin ? "Yes" : "No";
+        var adminAttr = envInfo.IsAdmin ? DarkTheme.Green : DarkTheme.Yellow;
+        view.AppendLine($"  Admin:           {adminLabel}", adminAttr);
+
+        var dscLabel = envInfo.DscCliAvailable
+            ? envInfo.DscCliVersion ?? "available"
+            : "not found";
+        var dscAttr = envInfo.DscCliAvailable ? DarkTheme.Green : DarkTheme.Red;
+        view.AppendLine($"  DSC CLI:         {dscLabel}", dscAttr);
+
+        view.AppendLine(
+            $"  OS:              {Environment.OSVersion}",
+            DarkTheme.Default);
+        view.AppendLine(
+            $"  .NET Runtime:    {Environment.Version}",
+            DarkTheme.Default);
+        view.AppendLine(string.Empty, DarkTheme.Default);
+    }
+
+    private static TopTabBarView CreateTopTabBar()
+        => new(["Profiles", "Execution Log", "Environment"])
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = 1,
+        };
+
+    private void SwitchTopTab(int index)
+    {
+        activeTopTab = index;
+
+        profilesPage.Visible = index == 0;
+        executionLogView.Visible = index == 1;
+        environmentView.Visible = index == 2;
+
+        topTabBar.SetActive(index);
+        UpdateActionHints();
+
+        if (index == 0)
+        {
+            profileList.SetFocus();
+        }
     }
 
     private ActionHintsView CreateActionHints()
@@ -263,6 +389,14 @@ public sealed class MainWindow : Window
                 return;
             }
 
+            // Tab key — handle globally before TabView can intercept it
+            if (key == Key.Tab && IsProfilesTabActive())
+            {
+                HandleTabKey();
+                key.Handled = true;
+                return;
+            }
+
             if (filterField.HasFocus)
             {
                 return;
@@ -274,17 +408,25 @@ public sealed class MainWindow : Window
 
     private void HandleNonFilterKey(Key key)
     {
-        if (key == Key.Q)
+        if (key == Key.D1 || key == Key.D2 || key == Key.D3)
+        {
+            HandleTopTabKey(key);
+            key.Handled = true;
+        }
+        else if (key == Key.Q)
         {
             ConfirmQuit();
             key.Handled = true;
         }
-        else if (key == Key.Tab)
+        else if (IsProfilesTabActive())
         {
-            HandleTabKey();
-            key.Handled = true;
+            HandleProfilesKey(key);
         }
-        else if (key == Key.H)
+    }
+
+    private void HandleProfilesKey(Key key)
+    {
+        if (key == Key.H)
         {
             profileList.SetFocus();
             key.Handled = true;
@@ -319,6 +461,15 @@ public sealed class MainWindow : Window
             HandleActionKeys(key);
         }
     }
+
+    private void HandleTopTabKey(Key key)
+    {
+        var index = key == Key.D1 ? 0 : key == Key.D2 ? 1 : 2;
+        SwitchTopTab(index);
+    }
+
+    private bool IsProfilesTabActive()
+        => activeTopTab == 0;
 
     private void HandleTabKey()
     {
@@ -434,12 +585,23 @@ public sealed class MainWindow : Window
     private List<ActionHint> BuildActionHints()
     {
         var txt = DarkTheme.StatusBarKey;
+        var list = new List<ActionHint>();
 
-        var list = new List<ActionHint>
+        if (IsProfilesTabActive())
         {
-            new("Space", "Toggle", txt, txt),
-            new("t", "Test", txt, txt),
-        };
+            AppendProfileHints(list, txt);
+        }
+
+        list.Add(new ActionHint("q", "Quit", txt, txt));
+        return list;
+    }
+
+    private void AppendProfileHints(
+        List<ActionHint> list,
+        Terminal.Gui.Drawing.Attribute txt)
+    {
+        list.Add(new ActionHint("Space", "Toggle", txt, txt));
+        list.Add(new ActionHint("t", "Test", txt, txt));
 
         if (envInfo.IsAdmin)
         {
@@ -447,7 +609,6 @@ public sealed class MainWindow : Window
         }
 
         list.Add(new ActionHint("?", "Help", txt, txt));
-        list.Add(new ActionHint("q", "Quit", txt, txt));
 
         var marked = profileList.GetAllMarkedItems();
         var count = marked.Count();
@@ -460,8 +621,6 @@ public sealed class MainWindow : Window
         {
             list.Add(new ActionHint("\u2014", "test only", txt, txt));
         }
-
-        return list;
     }
 
     private void OnProfileSelectionChanged(
@@ -677,7 +836,29 @@ public sealed class MainWindow : Window
 
         app.Run(executionDialog);
 
+        CaptureExecutionLog(executionDialog);
+
         return Task.CompletedTask;
+    }
+
+    private void CaptureExecutionLog(ExecutionDialog dialog)
+    {
+        var lines = dialog.GetOutputLines();
+        if (lines.Count == 0)
+        {
+            return;
+        }
+
+        // Clear placeholder text on first real execution
+        if (executionLogView.GetLines().Count == 1)
+        {
+            executionLogView.Clear();
+        }
+
+        foreach (var (text, attr) in lines)
+        {
+            executionLogView.AppendLine(text, attr);
+        }
     }
 
     private bool ConfirmExecution(
@@ -770,7 +951,7 @@ public sealed class MainWindow : Window
 
     private void ApplyFilter()
     {
-        var filter = filterField.Text.Trim() ?? string.Empty;
+        var filter = filterField.Text.Trim();
 
         filteredIndices.Clear();
         profileDisplayNames.Clear();
