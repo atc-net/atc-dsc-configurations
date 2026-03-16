@@ -23,6 +23,7 @@ public sealed class MainWindow : Window
     private readonly TextView rawYamlText;
     private readonly TextField filterField;
     private readonly ActionHintsView actionHints;
+    private readonly LoadingSpinnerView spinner;
 
     private readonly ObservableCollection<string> profileDisplayNames = [];
     private readonly List<ProfileSummary> allProfileSummaries = [];
@@ -75,6 +76,13 @@ public sealed class MainWindow : Window
         extensionsText = CreateReadOnlyTextView(wordWrap: false);
         rawYamlText = CreateReadOnlyTextView(wordWrap: false);
         detailTabs = CreateDetailTabs();
+        spinner = new LoadingSpinnerView(app)
+        {
+            X = 1,
+            Y = 1,
+            Width = Dim.Fill(),
+            Height = 1,
+        };
         var rightPanel = CreateRightPanel(leftPanel);
 
         actionHints = CreateActionHints();
@@ -176,7 +184,7 @@ public sealed class MainWindow : Window
             Height = Dim.Fill(1),
         };
 
-        rightPanel.Add(detailTabs);
+        rightPanel.Add(detailTabs, spinner);
         return rightPanel;
     }
 
@@ -196,6 +204,8 @@ public sealed class MainWindow : Window
 
     private async Task LoadProfilesAsync()
     {
+        spinner.Label = "Loading profiles...";
+        spinner.Start();
         try
         {
             var summaries = await repository.ListProfilesAsync();
@@ -222,6 +232,10 @@ public sealed class MainWindow : Window
         {
             overviewText.Clear();
             overviewText.AppendLine($"Error loading profiles: {ex.Message}", DarkTheme.Red);
+        }
+        finally
+        {
+            spinner.Stop();
         }
     }
 
@@ -474,6 +488,8 @@ public sealed class MainWindow : Window
 
         var summary = allProfileSummaries[index];
 
+        spinner.Label = $"Loading {summary.Name}...";
+        spinner.Start();
         try
         {
             var content = await repository.GetProfileContentAsync(summary.FileName);
@@ -492,6 +508,10 @@ public sealed class MainWindow : Window
         {
             overviewText.Clear();
             overviewText.AppendLine($"Error loading profile: {ex.Message}", DarkTheme.Red);
+        }
+        finally
+        {
+            spinner.Stop();
         }
     }
 
