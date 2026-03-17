@@ -96,6 +96,7 @@ public static class Program
         });
 
         serviceCollection.AddSingleton<IProfileRepository>(sp => sp.GetRequiredService<CachingProfileRepository>());
+        serviceCollection.AddSingleton<IExecutionHistoryService, ExecutionHistoryService>();
     }
 
     private static void CleanupTempFiles()

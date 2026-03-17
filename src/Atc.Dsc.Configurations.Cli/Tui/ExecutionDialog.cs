@@ -19,6 +19,7 @@ public sealed class ExecutionDialog : Dialog
     private readonly LoadingSpinnerView progressSpinner;
     private readonly ProfileQueueView? queueView;
     private readonly Button closeButton;
+    private readonly List<(string FileName, ExecutionResult Result)> collectedResults = [];
     private CancellationTokenSource? cts;
 
     // Color palette — sourced from the centralized DarkTheme
@@ -99,6 +100,13 @@ public sealed class ExecutionDialog : Dialog
     /// <returns>A read-only list of text/attribute pairs from the output view.</returns>
     internal IReadOnlyList<(string Text, Terminal.Gui.Drawing.Attribute Attr)> GetOutputLines()
         => outputView.GetLines();
+
+    /// <summary>
+    /// Gets the collected execution results for history recording.
+    /// </summary>
+    /// <returns>A list of file name and result pairs.</returns>
+    internal IReadOnlyList<(string FileName, ExecutionResult Result)> GetResults()
+        => collectedResults;
 
     private static LoadingSpinnerView CreateSpinner(IApplication app)
         => new(app)
@@ -285,6 +293,7 @@ public sealed class ExecutionDialog : Dialog
                 : await client.ApplyAsync(tempPath, cancellationToken);
 
             RenderResults(result);
+            collectedResults.Add((profile.FileName, result));
 
             return result.Success;
         }

@@ -13,6 +13,7 @@ public sealed class MainWindow : Window
     private readonly IDscClient dscClient;
     private readonly IApplication app;
     private readonly EnvironmentInfo envInfo;
+    private readonly IExecutionHistoryService historyService;
     private readonly ExtensionLoader extensionLoader;
 
     private readonly ListView profileList;
@@ -43,24 +44,28 @@ public sealed class MainWindow : Window
     /// <param name="parser">the profile parser.</param>
     /// <param name="dscClient">the DSC client.</param>
     /// <param name="envInfo">the current environment info.</param>
+    /// <param name="historyService">the execution history service.</param>
     public MainWindow(
         IApplication app,
         IProfileRepository repository,
         IProfileParser parser,
         IDscClient dscClient,
-        EnvironmentInfo envInfo)
+        EnvironmentInfo envInfo,
+        IExecutionHistoryService historyService)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(parser);
         ArgumentNullException.ThrowIfNull(dscClient);
         ArgumentNullException.ThrowIfNull(envInfo);
+        ArgumentNullException.ThrowIfNull(historyService);
 
         this.app = app;
         this.repository = repository;
         this.parser = parser;
         this.dscClient = dscClient;
         this.envInfo = envInfo;
+        this.historyService = historyService;
         extensionLoader = new ExtensionLoader(repository);
 
         Title = "atc-dsc - DSCv3 Configuration Manager";
@@ -235,7 +240,7 @@ public sealed class MainWindow : Window
         return page;
     }
 
-    private static ColoredOutputView CreateExecutionLogView()
+    private ColoredOutputView CreateExecutionLogView()
     {
         var view = new ColoredOutputView
         {
@@ -244,8 +249,32 @@ public sealed class MainWindow : Window
             CanFocus = true,
         };
 
-        view.AppendLine("No executions yet.", DarkTheme.Dim);
+        var history = historyService.GetAll();
+        if (history.Count == 0)
+        {
+            view.AppendLine("No executions yet.", DarkTheme.Dim);
+            return view;
+        }
+
+        PopulateLogFromHistory(view, history);
         return view;
+    }
+
+    private static void PopulateLogFromHistory(
+        ColoredOutputView view,
+        IReadOnlyList<HistoryEntry> history)
+    {
+        foreach (var entry in history)
+        {
+            var modeLabel = entry.Mode == ExecutionMode.Test ? "TEST" : "APPLY";
+            var statusAttr = entry.Success ? DarkTheme.Green : DarkTheme.Red;
+            var statusLabel = entry.Success ? "PASS" : "FAIL";
+            var ts = entry.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+
+            view.AppendLine(
+                $"  {ts}  {entry.ProfileName,-35} {modeLabel,-6} {statusLabel}  ({entry.DurationSeconds:F1}s)",
+                statusAttr);
+        }
     }
 
     private ColoredOutputView CreateEnvironmentView()
@@ -836,29 +865,22 @@ public sealed class MainWindow : Window
 
         app.Run(executionDialog);
 
-        CaptureExecutionLog(executionDialog);
+        RecordAndRefreshLog(executionDialog);
 
         return Task.CompletedTask;
     }
 
-    private void CaptureExecutionLog(ExecutionDialog dialog)
+    private void RecordAndRefreshLog(ExecutionDialog dialog)
     {
-        var lines = dialog.GetOutputLines();
-        if (lines.Count == 0)
+        var results = dialog.GetResults();
+        foreach (var (fileName, result) in results)
         {
-            return;
+            historyService.RecordAsync(result, fileName).GetAwaiter().GetResult();
         }
 
-        // Clear placeholder text on first real execution
-        if (executionLogView.GetLines().Count == 1)
-        {
-            executionLogView.Clear();
-        }
-
-        foreach (var (text, attr) in lines)
-        {
-            executionLogView.AppendLine(text, attr);
-        }
+        // Rebuild the log view from the full history
+        executionLogView.Clear();
+        PopulateLogFromHistory(executionLogView, historyService.GetAll());
     }
 
     private bool ConfirmExecution(

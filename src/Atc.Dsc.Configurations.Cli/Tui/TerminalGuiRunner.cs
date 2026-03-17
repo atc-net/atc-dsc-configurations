@@ -12,6 +12,7 @@ public sealed class TerminalGuiRunner : IInteractiveRunner
     private readonly IProfileParser parser;
     private readonly IDscClient dscClient;
     private readonly EnvironmentInfo envInfo;
+    private readonly IExecutionHistoryService historyService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TerminalGuiRunner"/> class.
@@ -20,16 +21,19 @@ public sealed class TerminalGuiRunner : IInteractiveRunner
     /// <param name="parser">the parser for profile content.</param>
     /// <param name="dscClient">the DSC client.</param>
     /// <param name="envInfo">the current environment information.</param>
+    /// <param name="historyService">the execution history service.</param>
     public TerminalGuiRunner(
         IProfileRepository repository,
         IProfileParser parser,
         IDscClient dscClient,
-        EnvironmentInfo envInfo)
+        EnvironmentInfo envInfo,
+        IExecutionHistoryService historyService)
     {
         this.repository = repository;
         this.parser = parser;
         this.dscClient = dscClient;
         this.envInfo = envInfo;
+        this.historyService = historyService;
     }
 
     /// <inheritdoc />
@@ -39,7 +43,7 @@ public sealed class TerminalGuiRunner : IInteractiveRunner
         DarkTheme.Register();
         using var registration = cancellationToken.Register(() => app.Invoke(() => app.RequestStop()));
 
-        var mainWindow = new MainWindow(app, repository, parser, dscClient, envInfo);
+        var mainWindow = new MainWindow(app, repository, parser, dscClient, envInfo, historyService);
 
         app.Run(mainWindow);
 
