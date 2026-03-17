@@ -4,6 +4,7 @@ namespace Atc.Dsc.Configurations.Cli.Tui;
 /// Modal dialog that runs DSC test/apply operations using the structured
 /// <see cref="IDscClient"/> and renders colored, formatted per-resource
 /// results with status symbols, durations, and a final summary.
+/// Shows a queue sidebar when executing multiple profiles.
 /// </summary>
 [SuppressMessage("Reliability", "CA2213:Disposable fields should be disposed", Justification = "Terminal.Gui manages child view disposal")]
 public sealed class ExecutionDialog : Dialog
@@ -16,6 +17,7 @@ public sealed class ExecutionDialog : Dialog
 
     private readonly ColoredOutputView outputView;
     private readonly LoadingSpinnerView progressSpinner;
+    private readonly ProfileQueueView? queueView;
     private readonly Button closeButton;
     private CancellationTokenSource? cts;
 
@@ -69,41 +71,24 @@ public sealed class ExecutionDialog : Dialog
 
         var modeTitle = mode == ExecutionMode.Test ? "Testing" : "Applying";
         Title = $"{modeTitle} {profiles.Count} profile(s)";
-        Width = Dim.Percent(90);
+        Width = Dim.Percent(95);
         Height = Dim.Percent(85);
-        progressSpinner = new LoadingSpinnerView(app)
-        {
-            X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = 1,
-            Label = "Starting...",
-        };
 
-        outputView = new ColoredOutputView
-        {
-            X = 0,
-            Y = 1,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(1),
-            CanFocus = true,
-        };
+        progressSpinner = CreateSpinner(app);
+        outputView = CreateOutputView(profiles.Count > 1);
+        closeButton = CreateCloseButton();
 
-        closeButton = new Button
+        if (profiles.Count > 1)
         {
-            Text = "Cancel",
-            IsDefault = true,
-        };
-        closeButton.Accepting += (_, e) =>
+            queueView = CreateQueueView(app, profiles);
+            Add(progressSpinner, queueView, outputView);
+        }
+        else
         {
-            cts?.Cancel();
-            this.app.RequestStop();
-            e.Handled = true;
-        };
+            Add(progressSpinner, outputView);
+        }
 
-        Add(progressSpinner, outputView);
         AddButton(closeButton);
-
         Initialized += (_, _) => _ = RunExecutionAsync();
     }
 
@@ -114,6 +99,63 @@ public sealed class ExecutionDialog : Dialog
     /// <returns>A read-only list of text/attribute pairs from the output view.</returns>
     internal IReadOnlyList<(string Text, Terminal.Gui.Drawing.Attribute Attr)> GetOutputLines()
         => outputView.GetLines();
+
+    private static LoadingSpinnerView CreateSpinner(IApplication app)
+        => new(app)
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = 1,
+            Label = "Starting...",
+        };
+
+    private static ColoredOutputView CreateOutputView(bool hasQueue)
+    {
+        var x = hasQueue ? Pos.Percent(25) : Pos.Absolute(0);
+
+        return new ColoredOutputView
+        {
+            X = x,
+            Y = 1,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(1),
+            CanFocus = true,
+        };
+    }
+
+    private static ProfileQueueView CreateQueueView(
+        IApplication app,
+        IReadOnlyList<ProfileSummary> profiles)
+    {
+        var view = new ProfileQueueView(app)
+        {
+            X = 0,
+            Y = 1,
+            Width = Dim.Percent(25),
+            Height = Dim.Fill(1),
+        };
+
+        view.SetProfiles(profiles);
+        return view;
+    }
+
+    private Button CreateCloseButton()
+    {
+        var button = new Button
+        {
+            Text = "Cancel",
+            IsDefault = true,
+        };
+        button.Accepting += (_, e) =>
+        {
+            cts?.Cancel();
+            app.RequestStop();
+            e.Handled = true;
+        };
+
+        return button;
+    }
 
     private async Task RunExecutionAsync()
     {
@@ -149,6 +191,7 @@ public sealed class ExecutionDialog : Dialog
         finally
         {
             progressSpinner.Stop();
+            queueView?.StopSpinner();
             cts = null;
         }
 
@@ -175,10 +218,19 @@ public sealed class ExecutionDialog : Dialog
 
             var profile = profiles[i];
             RenderProfileHeader(profile, i);
+            queueView?.UpdateStatus(i, QueueItemStatus.Running);
 
             try
             {
-                var success = await ExecuteSingleProfileAsync(client, profile, cancellationToken);
+                var success = await ExecuteSingleProfileAsync(
+                    client,
+                    profile,
+                    cancellationToken);
+
+                queueView?.UpdateStatus(
+                    i,
+                    success ? QueueItemStatus.Passed : QueueItemStatus.Failed);
+
                 if (success)
                 {
                     passed++;
@@ -255,7 +307,8 @@ public sealed class ExecutionDialog : Dialog
             summaryAttr);
         FlushOutput();
 
-        UpdateProgress($"Done: {passed} passed, {failed} failed ({elapsed.TotalSeconds:F1}s)");
+        UpdateProgress(
+            $"Done: {passed} passed, {failed} failed ({elapsed.TotalSeconds:F1}s)");
     }
 
     private void RenderResults(ExecutionResult result)
@@ -271,7 +324,9 @@ public sealed class ExecutionDialog : Dialog
                 ?? res.State
                     .ToString()
                     .ToLowerInvariant();
-            var nameCol = res.Name.Length > 35 ? res.Name[..32] + "..." : res.Name;
+            var nameCol = res.Name.Length > 35
+                ? res.Name[..32] + "..."
+                : res.Name;
             var statusCol = $"({statusText})";
 
             AppendLine(
@@ -287,7 +342,9 @@ public sealed class ExecutionDialog : Dialog
         // Profile summary line
         var resultLabel = result.Success ? "PASS" : "FAIL";
         var resultAttr = result.Success ? GreenAttr : RedAttr;
-        AppendLine($"  Duration: {result.Duration.TotalSeconds:F1}s | Result: {resultLabel}", resultAttr);
+        AppendLine(
+            $"  Duration: {result.Duration.TotalSeconds:F1}s | Result: {resultLabel}",
+            resultAttr);
     }
 
     private static (string Symbol, Terminal.Gui.Drawing.Attribute Attr) GetSymbolAndColor(
