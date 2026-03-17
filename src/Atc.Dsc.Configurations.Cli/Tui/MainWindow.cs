@@ -683,7 +683,7 @@ public sealed class MainWindow : Window
             var content = await repository.GetProfileContentAsync(summary.FileName);
             var profile = parser.Parse(content, summary.FileName);
 
-            PopulateOverviewTab(profile);
+            PopulateOverviewTab(profile, summary.FileName);
             PopulateResourcesTab(profile);
 
             // Extensions tab
@@ -703,7 +703,9 @@ public sealed class MainWindow : Window
         }
     }
 
-    private void PopulateOverviewTab(Contracts.Profile profile)
+    private void PopulateOverviewTab(
+        Contracts.Profile profile,
+        string fileName)
     {
         overviewText.Clear();
 
@@ -722,6 +724,76 @@ public sealed class MainWindow : Window
         overviewText.AppendLine(string.Empty, DarkTheme.Default);
         overviewText.AppendLine($"File: {profile.FileName}", DarkTheme.Dim);
         overviewText.AppendLine("Source: GitHub", DarkTheme.Dim);
+
+        AppendLastTestResult(fileName);
+    }
+
+    private void AppendLastTestResult(string fileName)
+    {
+        var all = historyService.GetAll();
+        var lastTest = FindLatest(all, fileName, ExecutionMode.Test);
+        var lastApply = FindLatest(all, fileName, ExecutionMode.Apply);
+
+        if (lastTest is null && lastApply is null)
+        {
+            return;
+        }
+
+        overviewText.AppendLine(string.Empty, DarkTheme.Default);
+
+        var parts = new StringBuilder("History:  ");
+        AppendHistorySegment(parts, "TEST", lastTest);
+
+        if (lastTest is not null && lastApply is not null)
+        {
+            parts.Append("  \u2502  ");
+        }
+
+        AppendHistorySegment(parts, "APPLY", lastApply);
+
+        var attr = GetHistoryLineAttr(lastTest, lastApply);
+        overviewText.AppendLine(parts.ToString(), attr);
+    }
+
+    private static void AppendHistorySegment(
+        StringBuilder sb,
+        string mode,
+        HistoryEntry? entry)
+    {
+        if (entry is null)
+        {
+            return;
+        }
+
+        var symbol = entry.Success ? "\u2713" : "\u2717";
+        var ts = entry.Timestamp.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
+        sb.Append(CultureInfo.InvariantCulture, $"{mode} {symbol} {ts}");
+    }
+
+    private static Terminal.Gui.Drawing.Attribute GetHistoryLineAttr(
+        HistoryEntry? test,
+        HistoryEntry? apply)
+    {
+        var anyFailed = (test is not null && !test.Success) ||
+                        (apply is not null && !apply.Success);
+        return anyFailed ? DarkTheme.Red : DarkTheme.Green;
+    }
+
+    private static HistoryEntry? FindLatest(
+        IReadOnlyList<HistoryEntry> all,
+        string fileName,
+        ExecutionMode mode)
+    {
+        for (var i = all.Count - 1; i >= 0; i--)
+        {
+            if (all[i].Mode == mode &&
+                string.Equals(all[i].FileName, fileName, StringComparison.OrdinalIgnoreCase))
+            {
+                return all[i];
+            }
+        }
+
+        return null;
     }
 
     private void AppendResourceBreakdown(IReadOnlyList<Resource> resources)
@@ -866,6 +938,7 @@ public sealed class MainWindow : Window
         app.Run(executionDialog);
 
         RecordAndRefreshLog(executionDialog);
+        ReloadActiveProfile();
 
         return Task.CompletedTask;
     }
@@ -881,6 +954,15 @@ public sealed class MainWindow : Window
         // Rebuild the log view from the full history
         executionLogView.Clear();
         PopulateLogFromHistory(executionLogView, historyService.GetAll());
+    }
+
+    private void ReloadActiveProfile()
+    {
+        var index = profileList.SelectedItem;
+        if (index is >= 0 && index.Value < filteredIndices.Count)
+        {
+            _ = RunGuardedAsync(() => LoadProfileDetailAsync(filteredIndices[index.Value]));
+        }
     }
 
     private bool ConfirmExecution(
