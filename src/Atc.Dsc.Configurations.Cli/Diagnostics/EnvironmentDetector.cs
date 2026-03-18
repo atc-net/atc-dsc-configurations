@@ -12,11 +12,14 @@ public sealed class EnvironmentDetector : IEnvironmentDetector
         var isAdmin = OperatingSystem.IsWindows() && CheckIsAdmin();
 
         var (dscAvailable, dscVersion) = await ProbeVersionAsync("dsc", cancellationToken);
+        var (winGetAvailable, winGetVersion) = await ProbeVersionAsync("winget", cancellationToken);
 
         return new EnvironmentInfo(
             isAdmin,
             dscAvailable,
-            dscVersion);
+            dscVersion,
+            winGetAvailable,
+            winGetVersion);
     }
 
     [SupportedOSPlatform("windows")]
