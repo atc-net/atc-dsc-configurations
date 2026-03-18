@@ -172,7 +172,7 @@ public sealed class MainWindow : Window
             Title = "Profiles",
             X = 0,
             Y = 0,
-            Width = Dim.Percent(40),
+            Width = Dim.Percent(28),
             Height = Dim.Fill(),
         };
 
@@ -318,7 +318,7 @@ public sealed class MainWindow : Window
     }
 
     private static TopTabBarView CreateTopTabBar()
-        => new(["Profiles", "Execution Log", "Environment"])
+        => new(["Profiles/Configurations", "Execution Log", "Environment"])
         {
             X = 0,
             Y = 0,
@@ -372,7 +372,7 @@ public sealed class MainWindow : Window
 
             for (var i = 0; i < summaries.Count; i++)
             {
-                profileDisplayNames.Add(summaries[i].Name);
+                profileDisplayNames.Add(StripConfigurationSuffix(summaries[i].Name));
                 filteredIndices.Add(i);
             }
 
@@ -1068,7 +1068,7 @@ public sealed class MainWindow : Window
                 name.Contains(filter, StringComparison.OrdinalIgnoreCase))
             {
                 filteredIndices.Add(i);
-                profileDisplayNames.Add(name);
+                profileDisplayNames.Add(StripConfigurationSuffix(name));
             }
         }
 
@@ -1100,6 +1100,9 @@ public sealed class MainWindow : Window
                 "OK"));
         }
     }
+
+    internal static string StripConfigurationSuffix(string name)
+        => name.Replace(" configuration", string.Empty, StringComparison.OrdinalIgnoreCase);
 
     internal static string AbbreviateType(string type) => type switch
     {
