@@ -20,7 +20,7 @@ public sealed class MainWindow : Window
     private readonly TabView detailTabs;
     private readonly TopTabBarView topTabBar;
     private readonly ColoredOutputView overviewText;
-    private readonly TextView resourcesText;
+    private readonly ColoredOutputView resourcesText;
     private readonly TextView extensionsText;
     private readonly TextView rawYamlText;
     private readonly TextField filterField;
@@ -73,7 +73,10 @@ public sealed class MainWindow : Window
         profileList = CreateProfileList();
         filterField = CreateFilterField();
         overviewText = CreateOverviewView();
-        resourcesText = CreateReadOnlyTextView(wordWrap: false);
+        resourcesText = new ColoredOutputView
+        {
+            X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(), CanFocus = false,
+        };
         extensionsText = CreateReadOnlyTextView(wordWrap: false);
         rawYamlText = CreateReadOnlyTextView(wordWrap: false);
         detailTabs = CreateDetailTabs();
@@ -852,47 +855,44 @@ public sealed class MainWindow : Window
 
     private void PopulateResourcesTab(Contracts.Profile profile)
     {
-        const string rowFmt = " {0,2}  {1,-37} {2,-13} {3}";
+        resourcesText.Clear();
+
         var resList = profile.Resources;
-        var sb = new StringBuilder();
-        sb.AppendLine(string.Format(
-            CultureInfo.InvariantCulture,
-            rowFmt,
-            "#",
-            "Name",
-            "Type",
-            "Depends on"));
-        sb.AppendLine(" " + new string('\u2500', 66));
+
+        resourcesText.AppendLine(
+            $" {"#",2}  {"Name",-37} {"Type",-13}",
+            DarkTheme.Header);
+        resourcesText.AppendLine(
+            " " + new string('\u2500', 54),
+            DarkTheme.Dim);
 
         for (var i = 0; i < resList.Count; i++)
         {
-            var res = resList[i];
-            var name = res.Name.Length > 37 ? res.Name[..36] + "." : res.Name;
-            var type = AbbreviateType(res.Type);
-            var dependsOn = string.Empty;
-
-            if (res.DependsOn.Count > 0)
-            {
-                var indices = new List<string>();
-                foreach (var dep in res.DependsOn)
-                {
-                    var idx = ResolveDependencyIndex(dep, resList);
-                    indices.Add(idx.HasValue ? $"#{idx.Value}" : "?");
-                }
-
-                dependsOn = "<- " + string.Join(", ", indices);
-            }
-
-            sb.AppendLine(string.Format(
-                CultureInfo.InvariantCulture,
-                rowFmt,
-                i + 1,
-                name,
-                type,
-                dependsOn));
+            AppendResourceRow(resList, i);
         }
+    }
 
-        resourcesText.Text = sb.ToString();
+    private void AppendResourceRow(
+        IReadOnlyList<Resource> resList,
+        int index)
+    {
+        var res = resList[index];
+        var name = res.Name.Length > 37 ? res.Name[..36] + "." : res.Name;
+        var type = AbbreviateType(res.Type);
+        var typeAttr = GetTypeColor(type);
+
+        resourcesText.AppendLine(
+            $" {index + 1,2}  {name,-37} {type,-13}",
+            typeAttr);
+
+        foreach (var dep in res.DependsOn)
+        {
+            var idx = ResolveDependencyIndex(dep, resList);
+            var depName = idx.HasValue ? resList[idx.Value - 1].Name : "?";
+            resourcesText.AppendLine(
+                $"      \u2514\u2500 depends on: {depName} (#{idx?.ToString(CultureInfo.InvariantCulture) ?? "?"})",
+                DarkTheme.Dim);
+        }
     }
 
     private Task ExecuteSelectedAsync(ExecutionMode executionMode)
