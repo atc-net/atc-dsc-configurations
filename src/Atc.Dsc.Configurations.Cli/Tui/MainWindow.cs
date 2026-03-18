@@ -15,6 +15,7 @@ public sealed class MainWindow : Window
     private readonly EnvironmentInfo envInfo;
     private readonly IExecutionHistoryService historyService;
     private readonly ExtensionLoader extensionLoader;
+    private readonly WinGetClient winGetClient = new();
 
     private readonly ListView profileList;
     private readonly TabView detailTabs;
@@ -118,7 +119,9 @@ public sealed class MainWindow : Window
 
         list.KeyDown += (_, key) =>
         {
-            if (key == Key.CursorLeft || key == Key.CursorRight)
+            if (key == Key.CursorLeft || key == Key.CursorRight ||
+                (key == Key.CursorDown && list.SelectedItem == profileDisplayNames.Count - 1) ||
+                (key == Key.CursorUp && list.SelectedItem == 0))
             {
                 key.Handled = true;
             }
@@ -175,7 +178,7 @@ public sealed class MainWindow : Window
             Title = "Profiles",
             X = 0,
             Y = 0,
-            Width = Dim.Percent(28),
+            Width = Dim.Percent(20),
             Height = Dim.Fill(),
         };
 
@@ -310,6 +313,12 @@ public sealed class MainWindow : Window
             : "not found";
         var dscAttr = envInfo.DscCliAvailable ? DarkTheme.Green : DarkTheme.Red;
         view.AppendLine($"  DSC CLI:         {dscLabel}", dscAttr);
+
+        var winGetLabel = envInfo.WinGetAvailable
+            ? envInfo.WinGetVersion ?? "available"
+            : "not found";
+        var winGetAttr = envInfo.WinGetAvailable ? DarkTheme.Green : DarkTheme.Red;
+        view.AppendLine($"  WinGet:          {winGetLabel}", winGetAttr);
 
         view.AppendLine(
             $"  OS:              {Environment.OSVersion}",
@@ -687,7 +696,10 @@ public sealed class MainWindow : Window
             var profile = parser.Parse(content, summary.FileName);
 
             PopulateOverviewTab(profile, summary.FileName);
-            PopulateResourcesTab(profile);
+
+            // Start loading resources tab (winget info loads async)
+            var packages = await winGetClient.GetAllPackagesAsync();
+            PopulateResourcesTab(profile, packages);
 
             // Extensions tab
             extensionsText.Text = await extensionLoader.LoadAsync(summary.FileName);
@@ -853,38 +865,91 @@ public sealed class MainWindow : Window
         _ => type + "s",
     };
 
-    private void PopulateResourcesTab(Contracts.Profile profile)
+    private void PopulateResourcesTab(
+        Contracts.Profile profile,
+        Dictionary<string, WinGetPackageInfo> packages)
     {
         resourcesText.Clear();
 
         var resList = profile.Resources;
 
         resourcesText.AppendLine(
-            $" {"#",2}  {"Name",-37} {"Type",-13}",
+            $" {"#",2}  {"Name",-30} {"Type",-10} {"Status",-14} {"Installed",-14} {"Available",-14}",
             DarkTheme.Header);
         resourcesText.AppendLine(
-            " " + new string('\u2500', 54),
+            " " + new string('\u2500', 86),
             DarkTheme.Dim);
 
         for (var i = 0; i < resList.Count; i++)
         {
-            AppendResourceRow(resList, i);
+            AppendResourceRow(resList, i, packages);
         }
     }
 
     private void AppendResourceRow(
         IReadOnlyList<Resource> resList,
-        int index)
+        int index,
+        Dictionary<string, WinGetPackageInfo> packages)
     {
         var res = resList[index];
-        var name = res.Name.Length > 37 ? res.Name[..36] + "." : res.Name;
+        var name = res.Name.Length > 30 ? res.Name[..29] + "." : res.Name;
         var type = AbbreviateType(res.Type);
-        var typeAttr = GetTypeColor(type);
+
+        if (res.Type == "Microsoft.WinGet/Package")
+        {
+            AppendPackageRow(index, name, type, res, packages);
+        }
+        else
+        {
+            resourcesText.AppendLine(
+                $" {index + 1,2}  {name,-30} {type,-10} {"-",-14}",
+                GetTypeColor(type));
+        }
+
+        AppendDependencyLines(resList, res);
+    }
+
+    private void AppendPackageRow(
+        int index,
+        string name,
+        string type,
+        Resource res,
+        Dictionary<string, WinGetPackageInfo> packages)
+    {
+        var packageId = res.Properties?.TryGetValue("id", out var idObj) == true
+            ? idObj?.ToString() ?? string.Empty
+            : string.Empty;
+
+        if (packageId.Length == 0 ||
+            !packages.TryGetValue(packageId, out var pkg))
+        {
+            resourcesText.AppendLine(
+                $" {index + 1,2}  {name,-30} {type,-10} {"\u25cb not installed",-14}",
+                DarkTheme.Dim);
+            return;
+        }
+
+        var hasUpgrade = pkg.AvailableVersion is not null;
+        var statusLabel = hasUpgrade ? "\u2b06 upgrade" : "\u2713 installed";
+        var statusAttr = hasUpgrade ? DarkTheme.Yellow : DarkTheme.Green;
+        var installed = pkg.InstalledVersion.Length > 14
+            ? pkg.InstalledVersion[..13] + "."
+            : pkg.InstalledVersion;
+        var available = hasUpgrade
+            ? (pkg.AvailableVersion!.Length > 14
+                ? pkg.AvailableVersion[..13] + "."
+                : pkg.AvailableVersion)
+            : string.Empty;
 
         resourcesText.AppendLine(
-            $" {index + 1,2}  {name,-37} {type,-13}",
-            typeAttr);
+            $" {index + 1,2}  {name,-30} {type,-10} {statusLabel,-14} {installed,-14} {available,-14}",
+            statusAttr);
+    }
 
+    private void AppendDependencyLines(
+        IReadOnlyList<Resource> resList,
+        Resource res)
+    {
         foreach (var dep in res.DependsOn)
         {
             var idx = ResolveDependencyIndex(dep, resList);

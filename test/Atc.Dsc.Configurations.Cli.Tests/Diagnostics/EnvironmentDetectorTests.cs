@@ -46,7 +46,9 @@ public sealed class EnvironmentDetectorTests
         var info = new EnvironmentInfo(
             IsAdmin: false,
             DscCliAvailable: dscCliAvailable,
-            DscCliVersion: version);
+            DscCliVersion: version,
+            WinGetAvailable: true,
+            WinGetVersion: null);
 
         // Act & Assert
         Assert.Equal(expected, info.DscCliAvailable);
