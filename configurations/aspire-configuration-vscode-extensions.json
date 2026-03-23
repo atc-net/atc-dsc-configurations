@@ -1,0 +1,6 @@
+{
+  "extensions":
+  [
+    { "name": "microsoft-aspire.aspire-vscode", "description": "The official Aspire extension for VS Code. Run, debug, and deploy your Aspire apps. Supports building distributed apps with microservices, databases, containers, and frontends, with debugging for C#, Python, Node.js, and more" }
+  ]
+}
