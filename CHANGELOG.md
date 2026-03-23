@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.2.0...v1.3.0) (2026-03-23)
+
+
+### Features
+
+* add Aspire DSC profile with VS Code extension ([82d36b9](https://github.com/atc-net/atc-dsc-configurations/commit/82d36b94e311c31eeec6638e03788f75fa6554c8))
+
 ## [1.2.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.1.2...v1.2.0) (2026-03-18)
 
 
