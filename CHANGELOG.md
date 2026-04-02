@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.3.0...v1.4.0) (2026-04-02)
+
+
+### Features
+
+* add new VS extensions to dotnet configuration ([3de98bb](https://github.com/atc-net/atc-dsc-configurations/commit/3de98bb913a0ebf602d37c8ed515db62ba22eb80))
+
 ## [1.3.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.2.0...v1.3.0) (2026-03-23)
 
 
