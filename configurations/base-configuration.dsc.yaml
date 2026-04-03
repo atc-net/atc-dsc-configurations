@@ -15,6 +15,11 @@ resources:
     properties:
       id: "7zip.7zip"
       source: winget
+  - name: Install Discord
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Discord.Discord
+      source: winget
   - name: Install Fork
     type: Microsoft.WinGet/Package
     properties:
