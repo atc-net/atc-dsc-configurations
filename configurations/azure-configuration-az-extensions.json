@@ -1,0 +1,10 @@
+{
+    "extensions": [
+        {"name": "containerapp", "description": "Manage Azure Container Apps"},
+        {"name": "application-insights", "description": "Manage Application Insights components"},
+        {"name": "aks-preview", "description": "AKS preview features"},
+        {"name": "azure-devops", "description": "Azure DevOps CLI for pipelines, repos, work items"},
+        {"name": "storage-preview", "description": "Azure Storage preview features"},
+        {"name": "webapp", "description": "Manage Azure Web Apps"}
+    ]
+}
