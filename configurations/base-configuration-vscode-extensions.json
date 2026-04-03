@@ -6,6 +6,7 @@
     { "name": "EditorConfig.EditorConfig", "description": "EditorConfig Support for Visual Studio Code" },
     { "name": "formulahendry.github-actions", "description": "Language support for workflow file of GitHub Actions" },
     { "name": "github.vscode-github-actions", "description": "GitHub Actions workflows and runs for github.com hosted repositories in VS Code" },
+    { "name": "GitHub.vscode-pull-request-github", "description": "Review and manage GitHub pull requests and issues in VS Code" },
     { "name": "johnpapa.vscode-cloak", "description": "Cloak hides/shows your secrets in environment files, to avoid accidentally sharing them with everyone who sees your screen" },
     { "name": "mikestead.dotenv", "description": "Support for dotenv file syntax" },
     { "name": "mindaro-dev.file-downloader", "description": "Exposes an API that allows other extensions to download files" },
