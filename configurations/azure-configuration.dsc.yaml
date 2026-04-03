@@ -15,6 +15,55 @@ resources:
     properties:
       id: Microsoft.AzureCLI
       source: winget
+  - name: Install Azure CLI Extensions
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'Install Azure CLI')]"
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -Command
+        - |
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $jsonContent = Get-Content '${WinGetConfigRoot}\azure-configuration-az-extensions.json' -Raw
+          $extensions = (ConvertFrom-Json $jsonContent).extensions
+          $installed = az extension list --query "[].name" -o tsv 2>$null
+          if (-not $installed) { $installed = @() }
+          foreach ($ext in $extensions) {
+            if ($installed -notcontains $ext.name) {
+              Write-Host "Installing az extension: $($ext.name)"
+              az extension add --name $ext.name --yes
+            }
+          }
+      exitCode: 0
+  - name: Install NodeJS
+    type: Microsoft.WinGet/Package
+    properties:
+      id: OpenJS.NodeJS.LTS
+      source: winget
+  - name: Install npm Global Packages
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'Install NodeJS')]"
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -Command
+        - |
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $jsonContent = Get-Content '${WinGetConfigRoot}\azure-configuration-npm-packages.json' -Raw
+          $packages = (ConvertFrom-Json $jsonContent).packages
+          $installedRaw = npm list -g --depth=0 --json 2>$null | ConvertFrom-Json
+          $installedNames = if ($installedRaw.dependencies) { $installedRaw.dependencies.PSObject.Properties.Name } else { @() }
+          foreach ($pkg in $packages) {
+            if ($installedNames -notcontains $pkg.name) {
+              Write-Host "Installing $($pkg.name)"
+              npm install -g $($pkg.name)
+            }
+          }
+      exitCode: 0
   - name: Install Azure Cosmos DB Emulator
     type: Microsoft.WinGet/Package
     properties:

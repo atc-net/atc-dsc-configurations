@@ -15,6 +15,28 @@ resources:
     properties:
       id: OpenJS.NodeJS.LTS
       source: winget
+  - name: Install npm Global Packages
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'Install NodeJS')]"
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -Command
+        - |
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $jsonContent = Get-Content '${WinGetConfigRoot}\web-configuration-npm-packages.json' -Raw
+          $packages = (ConvertFrom-Json $jsonContent).packages
+          $installedRaw = npm list -g --depth=0 --json 2>$null | ConvertFrom-Json
+          $installedNames = if ($installedRaw.dependencies) { $installedRaw.dependencies.PSObject.Properties.Name } else { @() }
+          foreach ($pkg in $packages) {
+            if ($installedNames -notcontains $pkg.name) {
+              Write-Host "Installing $($pkg.name)"
+              npm install -g $($pkg.name)
+            }
+          }
+      exitCode: 0
   - name: Install Visual Studio Code
     type: Microsoft.WinGet/Package
     properties:

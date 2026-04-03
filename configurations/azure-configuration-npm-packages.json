@@ -1,0 +1,5 @@
+{
+    "packages": [
+        {"name": "azurite", "description": "Azure Storage Emulator replacement"}
+    ]
+}

@@ -1,0 +1,6 @@
+{
+    "packages": [
+        {"name": "typescript", "description": "TypeScript compiler"},
+        {"name": "@playwright/cli", "description": "Playwright CLI for browser testing"}
+    ]
+}
