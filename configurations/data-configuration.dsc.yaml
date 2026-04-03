@@ -20,6 +20,32 @@ resources:
     properties:
       id: Microsoft.AzureDataStudio
       source: winget
+  - name: Install Python
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Python.Python.3.12
+      source: winget
+  - name: Install pip Packages
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'Install Python')]"
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -Command
+        - |
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $jsonContent = Get-Content '${WinGetConfigRoot}\data-configuration-pip-packages.json' -Raw
+          $packages = (ConvertFrom-Json $jsonContent).packages
+          foreach ($pkg in $packages) {
+            $check = pip show $pkg.name 2>$null
+            if (-not $check) {
+              Write-Host "Installing $($pkg.name)"
+              pip install $($pkg.name)
+            }
+          }
+      exitCode: 0
   - name: Install Visual Studio Code
     type: Microsoft.WinGet/Package
     properties:

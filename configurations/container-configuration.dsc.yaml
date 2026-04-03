@@ -15,6 +15,11 @@ resources:
     properties:
       id: Docker.DockerDesktop
       source: winget
+  - name: Install act
+    type: Microsoft.WinGet/Package
+    properties:
+      id: nektos.act
+      source: winget
   - name: Install Windows Subsystem for Linux
     type: Microsoft.WinGet/Package
     properties:
