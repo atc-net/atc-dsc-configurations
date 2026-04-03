@@ -55,6 +55,27 @@ resources:
     properties:
       id: Microsoft.PowerShell
       source: winget
+  - name: Install PowerShell Modules
+    type: Microsoft.DSC.Transitional/RunCommandOnSet
+    dependsOn:
+      - "[resourceId('Microsoft.WinGet/Package', 'Install PowerShell 7')]"
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -Command
+        - |
+          $jsonContent = Get-Content '${WinGetConfigRoot}\base-configuration-ps-modules.json' -Raw
+          $modules = (ConvertFrom-Json $jsonContent).modules
+          foreach ($mod in $modules) {
+            if (-not (Get-Module -ListAvailable -Name $mod.name)) {
+              $params = @{ Name = $mod.name; Scope = 'CurrentUser'; Force = $true }
+              if ($mod.allowClobber) { $params.AllowClobber = $true }
+              if ($mod.prerelease) { $params.AllowPrerelease = $true }
+              Install-Module @params
+            }
+          }
+      exitCode: 0
   - name: Install Slack
     type: Microsoft.WinGet/Package
     properties:
