@@ -6,6 +6,7 @@
     { "name": "bpruitt-goddard.mermaid-markdown-syntax-highlighting", "description": "Provides syntax highlighting for Mermaid code blocks within Markdown files, enhancing readability and editing of diagrams." },
     { "name": "DavidAnson.vscode-markdownlint", "description": "A linter for Markdown files, helping ensure consistency and adherence to Markdown best practices and style guidelines." },
     { "name": "hediet.vscode-drawio", "description": "Integrates draw.io into VS Code, offering a powerful diagramming and drawing tool within the editor for creating complex diagrams." },
+    { "name": "pomdtr.excalidraw-editor", "description": "Integrates Excalidraw into VS Code for creating hand-drawn style diagrams and sketches." },
     { "name": "mdickin.markdown-shortcuts", "description": "Adds handy keyboard shortcuts for editing Markdown files more efficiently, improving productivity for Markdown documentation." },
     { "name": "yzhang.markdown-all-in-one", "description": "Provides a comprehensive set of features for Markdown editing, including keyboard shortcuts, table of contents, auto preview, and more." }
   ]
