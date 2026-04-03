@@ -6,6 +6,8 @@
         {"id": "dotnet-appcat", "version": "latest"},
         {"id": "csharprepl", "version": "latest"},
         {"id": "dotnet-ef", "version": "latest"},
+        {"id": "dotnet-outdated-tool", "version": "latest"},
+        {"id": "Microsoft.OpenApi.Kiota", "version": "latest"},
         {"id": "mlnet-win-x64", "version": "latest"},
         {"id": "powershell", "version": "latest"}
     ]
