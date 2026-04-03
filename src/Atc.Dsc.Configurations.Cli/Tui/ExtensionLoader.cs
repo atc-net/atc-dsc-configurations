@@ -32,6 +32,29 @@ internal sealed class ExtensionLoader(IProfileRepository repository)
             "id",
             "name");
 
+        totalCount += await AppendExtensionsFromJsonAsync(
+            sb,
+            $"{baseName}-npm-packages.json",
+            "npm Global Packages",
+            "name",
+            "description",
+            "packages");
+
+        totalCount += await AppendExtensionsFromJsonAsync(
+            sb,
+            $"{baseName}-pip-packages.json",
+            "pip Packages",
+            "name",
+            "description",
+            "packages");
+
+        totalCount += await AppendExtensionsFromJsonAsync(
+            sb,
+            $"{baseName}-az-extensions.json",
+            "Azure CLI Extensions",
+            "name",
+            "description");
+
         return totalCount == 0
             ? "No paired extension files found for this profile."
             : sb.ToString();
@@ -42,7 +65,8 @@ internal sealed class ExtensionLoader(IProfileRepository repository)
         string fileName,
         string heading,
         string idField,
-        string labelField)
+        string labelField,
+        string rootArrayKey = "extensions")
     {
         if (notFoundFiles.Contains(fileName))
         {
@@ -56,7 +80,7 @@ internal sealed class ExtensionLoader(IProfileRepository repository)
             return 0;
         }
 
-        return RenderExtensions(sb, json, heading, idField, labelField);
+        return RenderExtensions(sb, json, heading, idField, labelField, rootArrayKey);
     }
 
     private static int RenderExtensions(
@@ -64,11 +88,12 @@ internal sealed class ExtensionLoader(IProfileRepository repository)
         string json,
         string heading,
         string idField,
-        string labelField)
+        string labelField,
+        string rootArrayKey = "extensions")
     {
         using var doc = JsonDocument.Parse(json);
 
-        if (!doc.RootElement.TryGetProperty("extensions", out var arr) ||
+        if (!doc.RootElement.TryGetProperty(rootArrayKey, out var arr) ||
             arr.ValueKind != JsonValueKind.Array)
         {
             return 0;
