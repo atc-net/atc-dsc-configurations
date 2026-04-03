@@ -35,7 +35,6 @@
     { "id": "MadsKristensen.Shifter", "name": "Shifter" },
     { "id": "MadsKristensen.SolutionFavorites", "name": "Solution Favorites" },
     { "id": "MadsKristensen.SqlFormatter", "name": "SQL Formatter" },
-    { "id": "MadsKristensen.WebPackTaskRunner", "name": "Webpack Task Runner" },
     { "id": "MadsKristensen.WorkflowBrowser", "name": "File Explorer" },
     { "id": "MadsKristensen.ZenCoding", "name": "ZenCoding" },
     { "id": "MikeWard-AnnArbor.VSColorOutput64", "name": "VSColorOutput64" },
