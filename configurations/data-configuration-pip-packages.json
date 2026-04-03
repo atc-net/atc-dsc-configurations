@@ -1,0 +1,5 @@
+{
+    "packages": [
+        {"name": "databricks-cli", "description": "Databricks command-line interface"}
+    ]
+}
