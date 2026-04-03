@@ -15,6 +15,11 @@ resources:
     properties:
       id: Ollama.Ollama
       source: winget
+  - name: Install Foundry Local
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Microsoft.FoundryLocal
+      source: winget
   - name: Install LMStudio
     type: Microsoft.WinGet/Package
     properties:
