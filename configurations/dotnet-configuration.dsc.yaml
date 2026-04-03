@@ -20,6 +20,16 @@ resources:
     properties:
       id: "9WZDNCRDMDM3"
       source: msstore
+  - name: Install Papercut SMTP
+    type: Microsoft.WinGet/Package
+    properties:
+      id: ChangemakerStudios.Papercut-SMTP
+      source: winget
+  - name: Install JetBrains ReSharper
+    type: Microsoft.WinGet/Package
+    properties:
+      id: JetBrains.ReSharper
+      source: winget
   - name: Install Visual Studio 2026 Enterprise
     type: Microsoft.WinGet/Package
     properties:
