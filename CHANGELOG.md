@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.4.0...v1.5.0) (2026-04-03)
+
+
+### Features
+
+* add PowerShell module installation to base configuration ([63b5baf](https://github.com/atc-net/atc-dsc-configurations/commit/63b5baf3483768fd32ad872ae5c4e58482df1065))
+* display npm, pip, and az extension manifests in TUI Extensions tab ([f40c4df](https://github.com/atc-net/atc-dsc-configurations/commit/f40c4dfcf1e44b74897ddd2325e9cc4e00120ec5))
+
 ## [1.4.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.3.0...v1.4.0) (2026-04-02)
 
 
