@@ -1,5 +1,8 @@
 {
     "packages": [
-        {"name": "@google/gemini-cli", "description": "Google Gemini CLI"}
+        {"name": "@anthropic-ai/claude-code", "description": "Anthropic Claude Code CLI"},
+        {"name": "@github/copilot", "description": "GitHub Copilot CLI"},
+        {"name": "@google/gemini-cli", "description": "Google Gemini CLI"},
+        {"name": "@openai/codex", "description": "OpenAI Codex CLI"}
     ]
 }
