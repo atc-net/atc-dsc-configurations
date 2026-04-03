@@ -1,0 +1,8 @@
+{
+    "modules": [
+        {"name": "posh-git", "description": "Git status in PowerShell prompt"},
+        {"name": "PSReadLine", "description": "Enhanced readline", "prerelease": true},
+        {"name": "Terminal-Icons", "description": "Folder and file icons in terminal"},
+        {"name": "z", "description": "Directory jumper", "allowClobber": true}
+    ]
+}

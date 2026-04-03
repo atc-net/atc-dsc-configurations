@@ -55,6 +55,14 @@ internal sealed class ExtensionLoader(IProfileRepository repository)
             "name",
             "description");
 
+        totalCount += await AppendExtensionsFromJsonAsync(
+            sb,
+            $"{baseName}-ps-modules.json",
+            "PowerShell Modules",
+            "name",
+            "description",
+            "modules");
+
         return totalCount == 0
             ? "No paired extension files found for this profile."
             : sb.ToString();
