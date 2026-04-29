@@ -18,7 +18,7 @@ public sealed class MainWindow : Window
     private readonly WinGetClient winGetClient = new();
 
     private readonly ListView profileList;
-    private readonly TabView detailTabs;
+    private readonly Tabs detailTabs;
     private readonly TopTabBarView topTabBar;
     private readonly ColoredOutputView overviewText;
     private readonly ColoredOutputView resourcesText;
@@ -197,9 +197,9 @@ public sealed class MainWindow : Window
         CanFocus = false,
     };
 
-    private TabView CreateDetailTabs()
+    private Tabs CreateDetailTabs()
     {
-        var tabs = new TabView
+        var tabs = new Tabs
         {
             X = 0,
             Y = 0,
@@ -208,10 +208,17 @@ public sealed class MainWindow : Window
             CanFocus = true,
         };
 
-        tabs.AddTab(new Tab { DisplayText = "Overview", View = overviewText }, andSelect: true);
-        tabs.AddTab(new Tab { DisplayText = "Resources", View = resourcesText }, andSelect: false);
-        tabs.AddTab(new Tab { DisplayText = "Extensions", View = extensionsText }, andSelect: false);
-        tabs.AddTab(new Tab { DisplayText = "Raw YAML", View = rawYamlText }, andSelect: false);
+        overviewText.Title = "Overview";
+        resourcesText.Title = "Resources";
+        extensionsText.Title = "Extensions";
+        rawYamlText.Title = "Raw YAML";
+
+        tabs.Add(overviewText);
+        tabs.Add(resourcesText);
+        tabs.Add(extensionsText);
+        tabs.Add(rawYamlText);
+
+        tabs.Value = overviewText;
 
         return tabs;
     }
@@ -430,7 +437,7 @@ public sealed class MainWindow : Window
                 return;
             }
 
-            // Tab key — handle globally before TabView can intercept it
+            // Tab key — handle globally before Tabs can intercept it
             if (key == Key.Tab && IsProfilesTabActive())
             {
                 HandleTabKey();
@@ -609,7 +616,7 @@ public sealed class MainWindow : Window
         }
     }
 
-    private View? ActiveDetailView() => detailTabs.SelectedTab?.View;
+    private View? ActiveDetailView() => detailTabs.Value;
 
     private void SelectAll(bool selected)
     {
@@ -917,7 +924,7 @@ public sealed class MainWindow : Window
         Dictionary<string, WinGetPackageInfo> packages)
     {
         var packageId = res.Properties?.TryGetValue("id", out var idObj) == true
-            ? idObj?.ToString() ?? string.Empty
+            ? idObj.ToString() ?? string.Empty
             : string.Empty;
 
         if (packageId.Length == 0 ||
