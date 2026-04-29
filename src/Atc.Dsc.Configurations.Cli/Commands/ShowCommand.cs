@@ -17,7 +17,7 @@ public sealed class ShowCommand(
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        ConsoleHelper.WriteHeader();
+        await ConsoleHelper.WriteHeaderAsync(cancellationToken);
 
         var fileName = ProfileFileNameExtensions.ResolveFileName(settings.Profile);
         string content;

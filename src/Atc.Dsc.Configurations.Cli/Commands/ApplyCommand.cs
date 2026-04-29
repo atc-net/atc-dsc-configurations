@@ -20,7 +20,7 @@ public sealed class ApplyCommand(
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        ConsoleHelper.WriteHeader();
+        await ConsoleHelper.WriteHeaderAsync(cancellationToken);
 
         if (!envInfo.IsAdmin)
         {
