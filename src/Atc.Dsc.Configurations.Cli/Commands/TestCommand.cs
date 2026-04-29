@@ -12,7 +12,7 @@ public sealed class TestCommand(
     : AsyncCommand<TestCommandSettings>
 {
     /// <inheritdoc />
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         Spectre.Console.Cli.CommandContext context,
         TestCommandSettings settings,
         CancellationToken cancellationToken)

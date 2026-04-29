@@ -11,7 +11,7 @@ public sealed class ListCommand(
     : AsyncCommand<ListCommandSettings>
 {
     /// <inheritdoc />
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         Spectre.Console.Cli.CommandContext context,
         ListCommandSettings settings,
         CancellationToken cancellationToken)

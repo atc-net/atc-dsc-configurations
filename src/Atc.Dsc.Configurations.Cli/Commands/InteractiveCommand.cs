@@ -10,7 +10,7 @@ public sealed class InteractiveCommand(
     : AsyncCommand
 {
     /// <inheritdoc />
-    public override Task<int> ExecuteAsync(
+    protected override Task<int> ExecuteAsync(
         Spectre.Console.Cli.CommandContext context,
         CancellationToken cancellationToken)
     {
