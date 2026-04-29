@@ -17,7 +17,8 @@ public static class CommandAppExtensions
                 .WithDescription("List available DSC profiles")
                 .WithExample("list")
                 .WithExample("list", "--verbose")
-                .WithExample("list", "--json");
+                .WithExample("list", "--json")
+                .WithExample("list", "--no-update-check");
 
             config
                 .AddCommand<ShowCommand>("show")
