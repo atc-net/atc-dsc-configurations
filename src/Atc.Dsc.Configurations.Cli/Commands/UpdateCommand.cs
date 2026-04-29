@@ -8,7 +8,7 @@ public sealed class UpdateCommand(IProfileRepository repository)
     : AsyncCommand
 {
     /// <inheritdoc />
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         Spectre.Console.Cli.CommandContext context,
         CancellationToken cancellationToken)
     {

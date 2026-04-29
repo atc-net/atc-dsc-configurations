@@ -13,7 +13,7 @@ public sealed class ApplyCommand(
     : AsyncCommand<ApplyCommandSettings>
 {
     /// <inheritdoc />
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         Spectre.Console.Cli.CommandContext context,
         ApplyCommandSettings settings,
         CancellationToken cancellationToken)

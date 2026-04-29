@@ -10,7 +10,7 @@ public sealed class ShowCommand(
     : AsyncCommand<ShowCommandSettings>
 {
     /// <inheritdoc />
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         Spectre.Console.Cli.CommandContext context,
         ShowCommandSettings settings,
         CancellationToken cancellationToken)
