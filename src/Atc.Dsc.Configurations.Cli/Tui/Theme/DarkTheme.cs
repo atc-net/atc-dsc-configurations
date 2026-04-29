@@ -60,7 +60,10 @@ internal static class DarkTheme
     /// </summary>
     internal static void Register()
     {
-        // Override the built-in "Base" scheme so all views inherit dark colors
+        // Override the built-in "Base" scheme so all views inherit dark colors.
+        // Editable/ReadOnly must be set explicitly — TextView's read-only mode
+        // uses VisualRole.ReadOnly, which otherwise derives from Editable (a
+        // swapped/dimmed Normal) and renders as light-gray-on-dark.
         var darkBase = new Scheme
         {
             Normal = Header,
@@ -68,6 +71,8 @@ internal static class DarkTheme
             HotNormal = Cyan,
             HotFocus = Cyan,
             Disabled = Dim,
+            Editable = Default,
+            ReadOnly = Default,
         };
 
         Terminal.Gui.Configuration.SchemeManager.AddScheme(
@@ -82,6 +87,8 @@ internal static class DarkTheme
             HotNormal = Cyan,
             HotFocus = Cyan,
             Disabled = Dim,
+            Editable = Default,
+            ReadOnly = Default,
         };
 
         Terminal.Gui.Configuration.SchemeManager.AddScheme(

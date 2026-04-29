@@ -17,13 +17,16 @@ public sealed class MainWindow : Window
     private readonly ExtensionLoader extensionLoader;
     private readonly WinGetClient winGetClient = new();
 
+    private static readonly string[] DetailTabLabels = ["Overview", "Resources", "Extensions", "Raw YAML"];
+
     private readonly ListView profileList;
-    private readonly Tabs detailTabs;
+    private readonly DetailTabBarView detailTabBar;
+    private readonly View detailContent;
     private readonly TopTabBarView topTabBar;
     private readonly ColoredOutputView overviewText;
     private readonly ColoredOutputView resourcesText;
-    private readonly TextView extensionsText;
-    private readonly TextView rawYamlText;
+    private readonly ColoredOutputView extensionsText;
+    private readonly ColoredOutputView rawYamlText;
     private readonly TextField filterField;
     private readonly ActionHintsView actionHints;
     private readonly LoadingSpinnerView spinner;
@@ -36,6 +39,8 @@ public sealed class MainWindow : Window
     private readonly List<int> filteredIndices = [];
 
     private int activeTopTab;
+    private int activeDetailTab;
+    private View? mountedDetailView;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -78,10 +83,18 @@ public sealed class MainWindow : Window
         {
             X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill(), CanFocus = false,
         };
-        extensionsText = CreateReadOnlyTextView(wordWrap: false);
-        rawYamlText = CreateReadOnlyTextView(wordWrap: false);
-        detailTabs = CreateDetailTabs();
-        spinner = new LoadingSpinnerView(app) { X = 1, Y = 1, Width = Dim.Fill(), Height = 1 };
+        extensionsText = CreateScrollableLineView();
+        rawYamlText = CreateScrollableLineView();
+        detailTabBar = CreateDetailTabBar();
+        detailContent = CreateDetailContent();
+
+        spinner = new LoadingSpinnerView(app)
+        {
+            X = 1,
+            Y = Pos.AnchorEnd(1),
+            Width = Dim.Fill(),
+            Height = 1,
+        };
 
         var leftPanel = CreateLeftPanel();
         var rightPanel = CreateRightPanel(leftPanel);
@@ -96,8 +109,15 @@ public sealed class MainWindow : Window
         SwitchTopTab(0);
         AddKeyBindings();
 
-        // Load profiles once the UI is ready
-        Initialized += (_, _) => _ = RunGuardedAsync(LoadProfilesAsync);
+        // Load profiles once the UI is ready. Initial focus belongs on the profile
+        // list (set by SwitchTopTab(0)); we re-assert it here because Terminal.Gui's
+        // internal init pass can shift focus during layout.
+        Initialized += (_, _) =>
+        {
+            SwitchDetailTab(0);
+            profileList.SetFocus();
+            _ = RunGuardedAsync(LoadProfilesAsync);
+        };
     }
 
     private ListView CreateProfileList()
@@ -186,55 +206,75 @@ public sealed class MainWindow : Window
         return leftPanel;
     }
 
-    private static TextView CreateReadOnlyTextView(bool wordWrap) => new()
+    private static ColoredOutputView CreateScrollableLineView() => new()
     {
         X = 0,
         Y = 0,
         Width = Dim.Fill(),
         Height = Dim.Fill(),
-        ReadOnly = true,
-        WordWrap = wordWrap,
         CanFocus = false,
     };
 
-    private Tabs CreateDetailTabs()
+    private static void PopulateLineView(
+        ColoredOutputView view,
+        string text)
     {
-        var tabs = new Tabs
+        view.Clear();
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        foreach (var line in text.Split('\n'))
+        {
+            view.AppendLine(line.TrimEnd('\r'), DarkTheme.Default);
+        }
+    }
+
+    private DetailTabBarView CreateDetailTabBar()
+    {
+        var bar = new DetailTabBarView(DetailTabLabels)
         {
             X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = 1,
+        };
+
+        bar.TabClicked = SwitchDetailTab;
+        return bar;
+    }
+
+    private View CreateDetailContent()
+        => new()
+        {
+            X = 0,
+            Y = 2,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(1),
+            CanFocus = true,
+        };
+
+    private ColoredOutputView ResolveDetailView(int index) => index switch
+    {
+        0 => overviewText,
+        1 => resourcesText,
+        2 => extensionsText,
+        _ => rawYamlText,
+    };
+
+    private View CreateRightPanel(View leftPanel)
+    {
+        var rightPanel = new View
+        {
+            X = Pos.Right(leftPanel),
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             CanFocus = true,
         };
 
-        overviewText.Title = "Overview";
-        resourcesText.Title = "Resources";
-        extensionsText.Title = "Extensions";
-        rawYamlText.Title = "Raw YAML";
-
-        tabs.Add(overviewText);
-        tabs.Add(resourcesText);
-        tabs.Add(extensionsText);
-        tabs.Add(rawYamlText);
-
-        tabs.Value = overviewText;
-
-        return tabs;
-    }
-
-    private FrameView CreateRightPanel(View leftPanel)
-    {
-        var rightPanel = new FrameView
-        {
-            Title = "Details",
-            X = Pos.Right(leftPanel),
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
-        };
-
-        rightPanel.Add(detailTabs, spinner);
+        rightPanel.Add(detailTabBar, detailContent, spinner);
         return rightPanel;
     }
 
@@ -415,6 +455,9 @@ public sealed class MainWindow : Window
 
     private void AddKeyBindings()
     {
+        profileList.KeyDown += HandleTabSwitchKey;
+        detailContent.KeyDown += HandleTabSwitchKey;
+
         app.Keyboard.KeyDown += (_, key) =>
         {
             if (app.TopRunnableView != this)
@@ -437,14 +480,6 @@ public sealed class MainWindow : Window
                 return;
             }
 
-            // Tab key — handle globally before Tabs can intercept it
-            if (key == Key.Tab && IsProfilesTabActive())
-            {
-                HandleTabKey();
-                key.Handled = true;
-                return;
-            }
-
             if (filterField.HasFocus)
             {
                 return;
@@ -452,6 +487,17 @@ public sealed class MainWindow : Window
 
             HandleNonFilterKey(key);
         };
+    }
+
+    private void HandleTabSwitchKey(
+        object? sender,
+        Key key)
+    {
+        if (key == Key.Tab && IsProfilesTabActive())
+        {
+            HandleTabKey();
+            key.Handled = true;
+        }
     }
 
     private void HandleNonFilterKey(Key key)
@@ -476,20 +522,30 @@ public sealed class MainWindow : Window
     {
         if (key == Key.H)
         {
-            profileList.SetFocus();
+            FocusLeftPane();
             key.Handled = true;
         }
         else if (key == Key.L)
         {
-            detailTabs.SetFocus();
+            FocusRightPane();
             key.Handled = true;
         }
-        else if (key == Key.J)
+        else if ((key == Key.CursorLeft || key == '[') && !profileList.HasFocus)
+        {
+            SwitchDetailTab((activeDetailTab - 1 + DetailTabLabels.Length) % DetailTabLabels.Length);
+            key.Handled = true;
+        }
+        else if ((key == Key.CursorRight || key == ']') && !profileList.HasFocus)
+        {
+            SwitchDetailTab((activeDetailTab + 1) % DetailTabLabels.Length);
+            key.Handled = true;
+        }
+        else if (key == Key.J || key == Key.CursorDown)
         {
             HandleJKey();
             key.Handled = true;
         }
-        else if (key == Key.K)
+        else if (key == Key.K || key == Key.CursorUp)
         {
             HandleKKey();
             key.Handled = true;
@@ -510,6 +566,12 @@ public sealed class MainWindow : Window
         }
     }
 
+    private void FocusLeftPane()
+        => profileList.SetFocus();
+
+    private void FocusRightPane()
+        => detailContent.SetFocus();
+
     private void HandleTopTabKey(Key key)
     {
         var index = key == Key.D1 ? 0 : key == Key.D2 ? 1 : 2;
@@ -523,11 +585,11 @@ public sealed class MainWindow : Window
     {
         if (profileList.HasFocus)
         {
-            detailTabs.SetFocus();
+            FocusRightPane();
         }
         else
         {
-            profileList.SetFocus();
+            FocusLeftPane();
         }
     }
 
@@ -539,7 +601,7 @@ public sealed class MainWindow : Window
         }
         else
         {
-            ActiveDetailView()?.ScrollVertical(1);
+            ActiveDetailView().Scroll(1);
         }
     }
 
@@ -551,21 +613,15 @@ public sealed class MainWindow : Window
         }
         else
         {
-            ActiveDetailView()?.ScrollVertical(-1);
+            ActiveDetailView().Scroll(-1);
         }
     }
 
     private void HandleScrollToTop()
-    {
-        var view = ActiveDetailView();
-        view?.ScrollVertical(-view.GetContentSize().Height);
-    }
+        => ActiveDetailView().ScrollToTop();
 
     private void HandleScrollToBottom()
-    {
-        var view = ActiveDetailView();
-        view?.ScrollVertical(view.GetContentSize().Height);
-    }
+        => ActiveDetailView().ScrollToEnd();
 
     private void HandleActionKeys(Key key)
     {
@@ -616,7 +672,29 @@ public sealed class MainWindow : Window
         }
     }
 
-    private View? ActiveDetailView() => detailTabs.Value;
+    private ColoredOutputView ActiveDetailView()
+        => ResolveDetailView(activeDetailTab);
+
+    private void SwitchDetailTab(int index)
+    {
+        activeDetailTab = index;
+
+        var active = ResolveDetailView(index);
+        if (!ReferenceEquals(mountedDetailView, active))
+        {
+            if (mountedDetailView is not null)
+            {
+                detailContent.Remove(mountedDetailView);
+            }
+
+            detailContent.Add(active);
+            mountedDetailView = active;
+        }
+
+        detailTabBar.SetActive(index);
+        detailContent.SetNeedsLayout();
+        detailContent.SetNeedsDraw();
+    }
 
     private void SelectAll(bool selected)
     {
@@ -649,6 +727,7 @@ public sealed class MainWindow : Window
         Terminal.Gui.Drawing.Attribute txt)
     {
         list.Add(new ActionHint("Space", "Toggle", txt, txt));
+        list.Add(new ActionHint("←/→", "Switch tab", txt, txt));
         list.Add(new ActionHint("t", "Test", txt, txt));
 
         if (envInfo.IsAdmin)
@@ -709,10 +788,10 @@ public sealed class MainWindow : Window
             PopulateResourcesTab(profile, packages);
 
             // Extensions tab
-            extensionsText.Text = await extensionLoader.LoadAsync(summary.FileName);
+            PopulateLineView(extensionsText, await extensionLoader.LoadAsync(summary.FileName));
 
             // Raw YAML tab
-            rawYamlText.Text = content;
+            PopulateLineView(rawYamlText, content);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -1065,10 +1144,12 @@ public sealed class MainWindow : Window
                                 ==================
 
                                 Navigation:
-                                  j / Down     Move down in profile list
-                                  k / Up       Move up in profile list
-                                  h / l        Switch to left / right panel
+                                  j, Down      Scroll down (or move in list)
+                                  k, Up        Scroll up (or move in list)
+                                  h, l         Switch to left, right panel
                                   Tab          Toggle panel focus
+                                  Left, [      Previous detail tab
+                                  Right, ]     Next detail tab
 
                                 Selection:
                                   Space        Toggle profile selection
@@ -1087,7 +1168,12 @@ public sealed class MainWindow : Window
                                 """;
 
         var trimmed = helpText.TrimEnd();
-        var lineCount = trimmed.Split('\n').Length;
+        ShowHelpDialog(trimmed);
+    }
+
+    private void ShowHelpDialog(string text)
+    {
+        var lineCount = text.Split('\n').Length;
 
         var dialog = new Dialog
         {
@@ -1102,7 +1188,7 @@ public sealed class MainWindow : Window
             Y = 0,
             Width = Dim.Fill(1),
             Height = lineCount,
-            Text = trimmed,
+            Text = text,
             CanFocus = false,
         };
 

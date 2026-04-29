@@ -10,6 +10,7 @@ public sealed class ColoredOutputView : View
     private static Terminal.Gui.Drawing.Attribute BgAttr => DarkTheme.Default;
 
     private readonly List<(string Text, Terminal.Gui.Drawing.Attribute Attr)> lines = [];
+    private int topRow;
 
     /// <summary>
     /// Appends a line of text with the specified color attribute.
@@ -19,10 +20,7 @@ public sealed class ColoredOutputView : View
     public void AppendLine(
         string text,
         Terminal.Gui.Drawing.Attribute attr)
-    {
-        lines.Add((text, attr));
-        UpdateContentSize();
-    }
+        => lines.Add((text, attr));
 
     /// <summary>
     /// Returns a snapshot of all lines and their color attributes.
@@ -37,20 +35,56 @@ public sealed class ColoredOutputView : View
     public void Clear()
     {
         lines.Clear();
-        UpdateContentSize();
+        topRow = 0;
     }
 
     /// <summary>
-    /// Scrolls the view to show the last line of output.
+    /// Adjusts the visible top row by <paramref name="delta"/> lines (positive
+    /// scrolls down, negative scrolls up). Updates only this view's draw state —
+    /// does not mutate <c>Viewport</c>, so parent layout/adornment redraws are
+    /// not triggered.
+    /// </summary>
+    /// <param name="delta">the row delta to scroll by.</param>
+    public void Scroll(int delta)
+    {
+        var maxTop = System.Math.Max(0, lines.Count - System.Math.Max(1, Viewport.Height));
+        var newTop = System.Math.Clamp(topRow + delta, 0, maxTop);
+        if (newTop == topRow)
+        {
+            return;
+        }
+
+        topRow = newTop;
+        SetNeedsDraw();
+    }
+
+    /// <summary>
+    /// Scrolls to the top of the buffer.
+    /// </summary>
+    public void ScrollToTop()
+    {
+        if (topRow == 0)
+        {
+            return;
+        }
+
+        topRow = 0;
+        SetNeedsDraw();
+    }
+
+    /// <summary>
+    /// Scrolls to the end of the buffer (last viewport-full).
     /// </summary>
     public void ScrollToEnd()
     {
-        var viewportHeight = Viewport.Height;
-        var overflow = lines.Count - viewportHeight;
-        if (overflow > 0)
+        var maxTop = System.Math.Max(0, lines.Count - System.Math.Max(1, Viewport.Height));
+        if (topRow == maxTop)
         {
-            ScrollVertical(overflow - Viewport.Y);
+            return;
         }
+
+        topRow = maxTop;
+        SetNeedsDraw();
     }
 
     /// <inheritdoc />
@@ -60,7 +94,7 @@ public sealed class ColoredOutputView : View
 
         for (var row = 0; row < vp.Height; row++)
         {
-            var lineIndex = vp.Y + row;
+            var lineIndex = topRow + row;
             Move(0, row);
 
             if (lineIndex < lines.Count)
@@ -90,19 +124,5 @@ public sealed class ColoredOutputView : View
         }
 
         return true;
-    }
-
-    private void UpdateContentSize()
-    {
-        var maxWidth = 0;
-        foreach (var (text, _) in lines)
-        {
-            if (text.Length > maxWidth)
-            {
-                maxWidth = text.Length;
-            }
-        }
-
-        SetContentSize(new System.Drawing.Size(maxWidth, lines.Count));
     }
 }
