@@ -19,7 +19,7 @@ public sealed class TestCommand(
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        ConsoleHelper.WriteHeader();
+        await ConsoleHelper.WriteHeaderAsync(cancellationToken);
 
         var results = new List<ExecutionResult>();
         var hasFailure = false;

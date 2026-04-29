@@ -10,15 +10,15 @@ public sealed class InteractiveCommand(
     : AsyncCommand
 {
     /// <inheritdoc />
-    protected override Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         Spectre.Console.Cli.CommandContext context,
         CancellationToken cancellationToken)
     {
-        ConsoleHelper.WriteHeader();
+        await ConsoleHelper.WriteHeaderAsync(cancellationToken);
 
         RenderEnvironmentStatus(envInfo);
 
-        return runner.RunAsync(cancellationToken);
+        return await runner.RunAsync(cancellationToken);
     }
 
     private static void RenderEnvironmentStatus(EnvironmentInfo envInfo)

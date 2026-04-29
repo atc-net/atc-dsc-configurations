@@ -12,7 +12,7 @@ public sealed class UpdateCommand(IProfileRepository repository)
         Spectre.Console.Cli.CommandContext context,
         CancellationToken cancellationToken)
     {
-        ConsoleHelper.WriteHeader();
+        await ConsoleHelper.WriteHeaderAsync(cancellationToken);
 
         repository.InvalidateCache();
         AnsiConsole.MarkupLine("[dim]Cache cleared.[/]");

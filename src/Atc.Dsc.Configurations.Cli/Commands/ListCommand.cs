@@ -18,7 +18,7 @@ public sealed class ListCommand(
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        ConsoleHelper.WriteHeader();
+        await ConsoleHelper.WriteHeaderAsync(cancellationToken);
 
         var summaries = await repository.ListProfilesAsync(cancellationToken);
 
