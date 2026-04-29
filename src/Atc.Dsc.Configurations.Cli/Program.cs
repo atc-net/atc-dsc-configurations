@@ -9,6 +9,12 @@ public static class Program
     {
         ArgumentNullException.ThrowIfNull(args);
 
+        if (args.Contains("--no-update-check", StringComparer.OrdinalIgnoreCase))
+        {
+            UpdateCheckRunner.SuppressForThisProcess();
+            args = [.. args.Where(a => !string.Equals(a, "--no-update-check", StringComparison.OrdinalIgnoreCase))];
+        }
+
         CleanupTempFiles();
 
         var consoleLoggerConfiguration = BuildLoggerConfiguration();
