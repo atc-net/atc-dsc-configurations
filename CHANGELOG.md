@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.5.0...v1.6.0) (2026-05-01)
+
+
+### Features
+
+* **cli:** add NuGet update check with auto-update and --no-update-check flag ([fe1ebab](https://github.com/atc-net/atc-dsc-configurations/commit/fe1ebabaacd5e158d97efde91ed0772d3b115619))
+* **cli:** replace text header with Braille ATC startup banner ([997db58](https://github.com/atc-net/atc-dsc-configurations/commit/997db58d3850ab402b7fb78a833f0860734accb8))
+
 ## [1.5.0](https://github.com/atc-net/atc-dsc-configurations/compare/v1.4.0...v1.5.0) (2026-04-03)
 
 
