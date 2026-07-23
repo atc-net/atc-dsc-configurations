@@ -40,6 +40,11 @@ resources:
     properties:
       id: Telerik.Fiddler.Classic
       source: winget
+  - name: Install Dev Tunnels CLI
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Microsoft.devtunnel
+      source: winget
   - name: Install Visual Studio Code
     type: Microsoft.WinGet/Package
     properties:
